@@ -199,3 +199,20 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   fixed with an `.on-pastel` rule that always uses dark ink. (2) "Phone" screenshots looked cut off; headless Edge
   ignores window widths under ~500 px (measured `innerWidth` 496 at `--window-size=390`), so the page wasn't
   overflowing, the screenshot was cropped. Phone shots need a 390 px iframe harness.
+
+## Round 4a: Niki's palette, a real page turn, plan list actions (Oct 26)
+
+- Palette from Niki's swatch image: Sunshine yellow #FFD54F, Soft butter #FFE8A1, Warm cream #FFF7E1, Peach glow
+  #FFB366, Sunlit green #A3B454. Desk = sunshine to peach gradient, paper = warm cream, text = deep olive-brown
+  (#3b2e0c, like the swatch labels), primary buttons = deep sunlit green #56631a (white text 6.4:1). The first four
+  tab/member colors are the swatches; backend member colors now use the same pastel set.
+- Page turn (after looking at book-flip references): a paper leaf with a shading gradient rotates 180 degrees over
+  the spine on laptop (forward = right page turns left, back = left page turns right), and curls away from the left
+  edge on phone. The new page is already underneath, so the leaf reveals it. Skipped entirely when reduced motion is
+  on (the leaf is never rendered, so it can't get stuck if animations are disabled). Removed after 800 ms.
+- Plans page: New plan, and on each plan Edit (opens its What page) and Delete for everyone (planner) or Leave
+  (others, removes it from this device), with a confirmation sheet.
+- SerpApi is live. Google Maps results include `extensions[].accessibility`, e.g. "Wheelchair accessible entrance",
+  "Wheelchair accessible restroom", "Wheelchair accessible parking lot", "Wheelchair accessible seating", plus
+  phone, website and opening hours, which the access check and task help will use. Bengaluru results had no
+  `price` field, so cost will lean on Gemma's estimate checked against the group budget.

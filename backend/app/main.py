@@ -183,7 +183,9 @@ class NewPlan(BaseModel):
 
 
 KIND_TITLES = {"hangout": "a hangout", "meal": "a meal", "date": "a date", "call": "a call", "trip": "a trip"}
-COLORS = ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#F0E442", "#000000"]
+# Same pastel set as the frontend (always shown with initials)
+COLORS = ["#FFD54F", "#FFB366", "#A3B454", "#FFE8A1", "#C9B6E4", "#9FCDE8", "#F29C8B", "#BFD3A0", "#EBA6B8", "#E3CFA6",
+          "#A9B8EC", "#D9A58A", "#A8DCC4", "#C9C3BA"]
 
 
 def _next_color(used: list[str]) -> str:

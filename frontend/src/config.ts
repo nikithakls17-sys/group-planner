@@ -5,9 +5,10 @@ export const APP_NAME = 'Nobody Plans'
    shown with initials, and neighbouring colors differ in lightness as well as hue. `deep` is the AA-readable
    version used for headings on paper. */
 export const PASTELS = [
-  { hex: '#F7D774', deep: '#8a6400', name: 'butter' },
-  { hex: '#F6B98A', deep: '#9a4a12', name: 'apricot' },
-  { hex: '#A8DCC4', deep: '#2f6b52', name: 'mint' },
+  { hex: '#FFD54F', deep: '#7a5a00', name: 'sunshine' },
+  { hex: '#FFB366', deep: '#8a4508', name: 'peach' },
+  { hex: '#A3B454', deep: '#4c5a12', name: 'sunlit green' },
+  { hex: '#FFE8A1', deep: '#7a6214', name: 'butter' },
   { hex: '#C9B6E4', deep: '#5b4290', name: 'lilac' },
   { hex: '#9FCDE8', deep: '#245f80', name: 'sky' },
   { hex: '#F29C8B', deep: '#9a3523', name: 'coral' },
@@ -16,6 +17,7 @@ export const PASTELS = [
   { hex: '#E3CFA6', deep: '#6f5626', name: 'sand' },
   { hex: '#A9B8EC', deep: '#3a4c99', name: 'periwinkle' },
   { hex: '#D9A58A', deep: '#7d4429', name: 'clay' },
+  { hex: '#A8DCC4', deep: '#2f6b52', name: 'mint' },
   { hex: '#C9C3BA', deep: '#57514a', name: 'stone' },
 ]
 export const MEMBER_COLORS = PASTELS

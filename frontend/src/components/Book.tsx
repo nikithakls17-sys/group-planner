@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 export type BookTab = { key: string; label: string; color: { hex: string; deep: string }; disabled?: boolean; done?: boolean }
 
@@ -29,6 +29,31 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
   turnKey?: string
 }) {
   const tab = tabs.find((t) => t.key === active)
+  // which way to turn: forward when the new tab is further along
+  const prev = useRef(active)
+  const [leaf, setLeaf] = useState<{ dir: 'fwd' | 'back'; n: number } | null>(null)
+  useEffect(() => {
+    if (prev.current === active) return
+    const from = tabs.findIndex((t) => t.key === prev.current)
+    const to = tabs.findIndex((t) => t.key === active)
+    prev.current = active
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduce'
+    if (reduce) return
+    setLeaf({ dir: to >= from ? 'fwd' : 'back', n: Date.now() })
+    const t = window.setTimeout(() => setLeaf(null), 800)
+    return () => window.clearTimeout(t)
+  }, [active, tabs])
+  const leafEl = leaf && (
+    <>
+      <div key={`d${leaf.n}`} className={`leaf hidden md:block ${leaf.dir === 'fwd' ? 'leaf-forward' : 'leaf-back-dir'}`} aria-hidden="true">
+        <div className="leaf-face paper"><div className="leaf-shade" /></div>
+        <div className="leaf-face leaf-back paper"><div className="leaf-shade" style={{ transform: 'scaleX(-1)' }} /></div>
+      </div>
+      <div key={`m${leaf.n}`} className={`leaf md:hidden ${leaf.dir === 'fwd' ? 'leaf-phone' : 'leaf-phone-back'}`} aria-hidden="true">
+        <div className="leaf-face paper"><div className="leaf-shade" /></div>
+      </div>
+    </>
+  )
   return (
     <div className="mx-auto w-full max-w-[1240px] px-0 py-0 md:px-14 md:py-8">
       {/* phone: clip + tab strip */}
@@ -61,6 +86,7 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
         </nav>
 
         <div className="relative z-[1] grid min-h-[calc(100dvh-4rem)] grid-cols-1 shadow-[var(--page-shadow)] md:grid-cols-2">
+          {leafEl}
           {/* left page: the current tab */}
           <section className="paper relative flex min-w-0 flex-col px-5 pb-12 pt-5 md:px-12 md:pt-8" aria-label={tab?.label}>
             <div className="mb-6 hidden items-center justify-between text-sm md:flex">
