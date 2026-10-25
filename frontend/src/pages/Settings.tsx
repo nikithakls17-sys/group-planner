@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { local } from '../api'
-import Mascot from '../components/Mascot'
 import { Avatar, Button, ChipGroup, Field, inputCls, Sheet, useToast } from '../components/ui'
 import { APP_NAME, MEMBER_COLORS } from '../config'
 
@@ -34,10 +33,10 @@ export default function SettingsPage() {
   }, [s])
   const set = (patch: Partial<Settings>) => setS((x) => ({ ...x, ...patch }))
   return (
-    <div className="flex flex-col gap-6 pt-6">
-      <h1 className="display text-2xl">Settings</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-bold">Settings</h1>
 
-      <section className="flex flex-col gap-5 border-2 border-ink bg-surface p-4">
+      <section className="flex flex-col gap-5 border-2 border-rule bg-surface p-4">
         <Field label="Theme">
           <ChipGroup label="Theme" options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Match my phone' }]}
             value={s.theme} onChange={(v: string) => set({ theme: v as Settings['theme'] })} />
@@ -52,7 +51,7 @@ export default function SettingsPage() {
         </Field>
       </section>
 
-      <section className="flex flex-col gap-5 border-2 border-ink bg-spot-sky p-4">
+      <section className="flex flex-col gap-5 border-2 border-rule bg-surface p-4">
         <Field label="Your name" hint="Filled in for you on new plans and invites.">
           <div className="flex gap-2">
             <input className={inputCls} value={name} autoComplete="given-name" onChange={(e) => setName(e.target.value)} />
@@ -71,15 +70,14 @@ export default function SettingsPage() {
         </Field>
       </section>
 
-      <section className="flex flex-col gap-3 border-2 border-ink bg-surface p-4">
+      <section className="flex flex-col gap-3 border-2 border-rule bg-surface p-4">
         <span className="label">Your data</span>
         <p className="text-base">No account. Your plans and groups are remembered in this browser only. City-level location, never your address; calendar free/busy only.</p>
         <Button variant="secondary" onClick={() => setWipe(true)}>Forget everything on this device</Button>
       </section>
 
-      <Link to="/about" className="flex items-center justify-between border-2 border-ink bg-spot-mustard p-4">
-        <span className="display text-xl">About {APP_NAME}</span>
-        <Mascot mood="happy" size={56} />
+      <Link to="/about" className="flex items-center justify-between border-2 border-rule bg-surface p-4">
+        <span className="text-xl font-bold">About {APP_NAME}</span>
       </Link>
 
       <Sheet open={wipe} onClose={() => setWipe(false)} title="Forget everything?">

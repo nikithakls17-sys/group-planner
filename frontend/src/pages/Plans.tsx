@@ -9,7 +9,7 @@ export default function Plans() {
   const upcoming = (plans ?? []).filter((p) => p.end_day >= today)
   const past = (plans ?? []).filter((p) => p.end_day < today)
   return (
-    <div className="flex flex-col gap-6 pt-6">
+    <div className="flex flex-col gap-6">
       <h1 className="text-xl font-bold">Plans</h1>
       {plans === null && <p className="text-base text-ink-soft">Loading...</p>}
       {plans && plans.length === 0 && (

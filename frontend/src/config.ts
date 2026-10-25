@@ -1,17 +1,44 @@
 // The app name is not final: change it here and APP_NAME in backend/app/config.py
 export const APP_NAME = 'Nobody Plans'
 
-// Okabe-Ito: color-blind-safe member colors. Always shown with initials, never color alone.
-export const MEMBER_COLORS = [
-  { hex: '#0072B2', name: 'blue' },
-  { hex: '#E69F00', name: 'orange' },
-  { hex: '#009E73', name: 'green' },
-  { hex: '#CC79A7', name: 'pink' },
-  { hex: '#56B4E9', name: 'sky blue' },
-  { hex: '#D55E00', name: 'red' },
-  { hex: '#F0E442', name: 'yellow' },
-  { hex: '#000000', name: 'black' },
+/* Pastel tab colors, which double as member colors. Pastels alone aren't color-blind safe, so members are ALWAYS
+   shown with initials, and neighbouring colors differ in lightness as well as hue. `deep` is the AA-readable
+   version used for headings on paper. */
+export const PASTELS = [
+  { hex: '#F7D774', deep: '#8a6400', name: 'butter' },
+  { hex: '#F6B98A', deep: '#9a4a12', name: 'apricot' },
+  { hex: '#A8DCC4', deep: '#2f6b52', name: 'mint' },
+  { hex: '#C9B6E4', deep: '#5b4290', name: 'lilac' },
+  { hex: '#9FCDE8', deep: '#245f80', name: 'sky' },
+  { hex: '#F29C8B', deep: '#9a3523', name: 'coral' },
+  { hex: '#BFD3A0', deep: '#4c6626', name: 'sage' },
+  { hex: '#EBA6B8', deep: '#8f3550', name: 'rose' },
+  { hex: '#E3CFA6', deep: '#6f5626', name: 'sand' },
+  { hex: '#A9B8EC', deep: '#3a4c99', name: 'periwinkle' },
+  { hex: '#D9A58A', deep: '#7d4429', name: 'clay' },
+  { hex: '#C9C3BA', deep: '#57514a', name: 'stone' },
 ]
+export const MEMBER_COLORS = PASTELS
 
-export const colorName = (hex: string) =>
-  MEMBER_COLORS.find((c) => c.hex.toLowerCase() === hex?.toLowerCase())?.name ?? 'this color'
+export const colorName = (hex: string) => PASTELS.find((c) => c.hex.toLowerCase() === hex?.toLowerCase())?.name ?? 'this color'
+
+/* The book's tabs. Each has its own pastel. */
+export const PLAN_TABS = [
+  { key: 'what', label: 'What', color: PASTELS[0] },
+  { key: 'who', label: 'Who', color: PASTELS[1] },
+  { key: 'dates', label: 'Dates', color: PASTELS[2] },
+  { key: 'budget', label: 'Budget', color: PASTELS[3] },
+  { key: 'plans', label: 'Plans', color: PASTELS[4] },
+  { key: 'tasks', label: 'Tasks', color: PASTELS[5] },
+  { key: 'go', label: 'Go', color: PASTELS[6] },
+  { key: 'money', label: 'Money', color: PASTELS[7] },
+] as const
+export type PlanTab = (typeof PLAN_TABS)[number]['key']
+
+export const APP_TABS = [
+  { key: '/', label: 'Home', color: PASTELS[0] },
+  { key: '/plans', label: 'Plans', color: PASTELS[4] },
+  { key: '/groups', label: 'Groups', color: PASTELS[1] },
+  { key: '/settings', label: 'Settings', color: PASTELS[3] },
+  { key: '/about', label: 'About', color: PASTELS[2] },
+]

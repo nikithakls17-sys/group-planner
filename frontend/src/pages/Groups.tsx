@@ -14,7 +14,7 @@ export default function Groups() {
     })
   }, [])
   return (
-    <div className="flex flex-col gap-6 pt-6">
+    <div className="flex flex-col gap-6">
       <h1 className="text-xl font-bold">Groups</h1>
       {groups === null && <p className="text-base text-ink-soft">Loading...</p>}
       {groups && groups.length === 0 && (
@@ -52,7 +52,7 @@ export function GroupPage() {
   if (!g) return <Working lines={['Opening the group...']} />
   const max = Math.max(1, ...g.members.map((m) => m.load))
   return (
-    <div className="flex flex-col gap-6 pt-6">
+    <div className="flex flex-col gap-6">
       <h1 className="text-xl font-bold">{g.name}</h1>
       <div className="flex flex-col gap-3">
         <Button full onClick={() => nav(`/new?group=${g.id}`)}>Plan something with {g.name}</Button>

@@ -169,3 +169,33 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   a person (their votes go, their tasks are reassigned), or delete the plan completely. Test added; 20 pass.
 - Location: detected in the browser and rounded to ~1 km before reverse-geocoding to a city (BigDataCloud's free
   client endpoint, no key). Needs https, so on the local Wi-Fi test link it falls back to typing a city.
+
+## Redesign round 3: the planner book (Oct 26)
+
+- New direction from Niki: a planner book (open notebook, binder clip, pastel tab dividers, stickers), a sunset /
+  ochre gender-neutral palette, and dropping the mascot and sketch styles. New reference images: a planner-book
+  portfolio spread, an illustrated city map poster, a handwritten to-do list, a hand-lettered "Dundee Dance Walk".
+- Laptop: the whole app is an open two-page spread on an ochre-to-sunset desk (theme tokens `--desk`, `--desk-2`),
+  off-white paper with faint ruled lines, a spine shadow, a binder clip on the left edge, tabs out of the right
+  edge. Left page = the current tab, right page = a live summary (plan so far, who answered, matched dates ranked by
+  how many are free, jobs). Phone: one page, clip at the top, tabs as a scrollable strip.
+- A plan is now one book with tabs What, Who, Dates, Budget, Plans, Tasks (+ Go and Money once the plan is picked).
+  This replaces the separate planner flow, friend flow and plan page; old `/p/:id/answer` links redirect.
+  Planner: type name + tap a kind (the plan and group link exist right away) -> Who (link, QR, add/remove people)
+  -> Dates -> Budget -> Plans. Friend: Who (name, color, auto location, I'm in) -> Dates -> Budget.
+- Dates tab ("When are you free?"): Connect Google Calendar first (recommended, enabled once Auth0 is set up), or
+  pick free dates on a calendar. Dates are required, times optional: "Any time preferences?" with Morning /
+  Afternoon / Evening / Any time and a Skip button. Skip = 8 AM-11 PM on those dates, so skipping never blocks a
+  match; the existing time-finding then ranks by how many people are free. The planner's free dates become the
+  plan's dates that friends choose from.
+- Budget tab adds the private access-needs question (step-free, accessible restroom, seating, quiet, close parking,
+  other); stored in the member's own picks, which the API only returns to that member.
+- Type: Rubik Doodle Shadow (outlined) for page headings only, tinted with the tab's color and a rule across the
+  page; Inter for everything else; Caveat for tiny notes and loading lines. Pastel tab colors double as the 12
+  member colors, always with initials. Headings use a deep tint on light paper and the pastel on dark paper.
+- Stickers only on plan options (white border, slight tilt) and the picked plan, which gets a "Picked" /
+  "Confirmed" stamp. Tabs switch with a small page-turn (off with reduced motion).
+- Bugs found with screenshots: (1) in dark mode the text on pastel tiles/tabs was light-on-pastel and unreadable;
+  fixed with an `.on-pastel` rule that always uses dark ink. (2) "Phone" screenshots looked cut off; headless Edge
+  ignores window widths under ~500 px (measured `innerWidth` 496 at `--window-size=390`), so the page wasn't
+  overflowing, the screenshot was cropped. Phone shots need a 390 px iframe harness.

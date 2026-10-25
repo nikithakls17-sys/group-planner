@@ -1,87 +1,48 @@
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
+import Book from './components/Book'
 import { ToastProvider } from './components/ui'
-import { APP_NAME } from './config'
+import { APP_TABS } from './config'
+import About, { AboutRight } from './pages/About'
 import Groups, { GroupPage } from './pages/Groups'
-import Home from './pages/Home'
-import Join from './pages/Join'
-import NewPlan from './pages/NewPlan'
-import PlanPage from './pages/PlanPage'
+import Home, { HomeRight } from './pages/Home'
+import PlanBook from './pages/PlanBook'
 import Plans from './pages/Plans'
-import About from './pages/About'
-import SettingsPage from './pages/Settings'
+import SettingsPage, { applySettings, readSettings } from './pages/Settings'
+import { HomeRight as PlansRight } from './pages/Home'
 
-const TABS = [
-  { to: '/', label: 'Home', icon: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z' },
-  { to: '/plans', label: 'Plans', icon: 'M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z' },
-  { to: '/groups', label: 'Groups', icon: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20c0-3.3 3.1-6 7-6s7 2.7 7 6M16 4.5a3.5 3.5 0 0 1 0 6.5M18 14c2.4.6 4 2.8 4 6' },
-  { to: '/settings', label: 'Settings', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z' },
-]
-
-function Icon({ d }: { d: string }) {
+/** Home, Plans, Groups, Settings and About are pages of the same book, with the app sections as tabs. */
+function AppBook({ left, right }: { left: React.ReactNode; right?: React.ReactNode }) {
+  const loc = useLocation()
+  const nav = useNavigate()
+  const active = APP_TABS.find((t) => t.key !== '/' && loc.pathname.startsWith(t.key))?.key ?? (loc.pathname.startsWith('/g/') ? '/groups' : '/')
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d={d} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <Book tabs={APP_TABS} active={active} onTab={(k) => nav(k)} turnKey={loc.pathname}
+      headLeft="Nobody Plans" headRight={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+      left={left} right={right} />
   )
 }
 
-function Nav() {
-  const link = ({ isActive }: { isActive: boolean }) =>
-    `flex min-h-12 items-center gap-3 border-2 px-4 text-base font-semibold ${
-      isActive ? 'border-ink bg-accent text-accent-ink' : 'border-transparent text-ink hover:bg-muted'
-    }`
-  return (
-    <>
-      {/* laptop: left sidebar */}
-      <nav aria-label="Main" className="fixed inset-y-0 left-0 hidden w-60 flex-col gap-2 border-r-2 border-ink bg-surface p-4 md:flex">
-        <span className="display px-4 pb-4 pt-2 text-2xl">{APP_NAME}</span>
-        {TABS.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.to === '/'} className={link}>
-            <Icon d={t.icon} />
-            {t.label}
-          </NavLink>
-        ))}
-      </nav>
-      {/* phone: bottom bar */}
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 flex border-t-2 border-ink bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-        {TABS.map((t) => (
-          <NavLink
-            key={t.to}
-            to={t.to}
-            end={t.to === '/'}
-            className={({ isActive }) => `flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-sm font-semibold ${isActive ? 'bg-accent text-accent-ink' : 'text-ink'}`}
-          >
-            <Icon d={t.icon} />
-            {t.label}
-          </NavLink>
-        ))}
-      </nav>
-    </>
-  )
+function OldAnswerLink() {
+  const { id } = useParams()
+  return <Navigate to={`/p/${id}?tab=who`} replace />
 }
 
 export default function App() {
-  const loc = useLocation()
-  // The step-by-step flows are full screen; the tab bar would only be a way to lose your place
-  const inFlow = loc.pathname.startsWith('/new') || loc.pathname.endsWith('/answer')
+  useEffect(() => applySettings(readSettings()), [])
   return (
     <ToastProvider>
-      {!inFlow && <Nav />}
-      <main className={`w-full px-4 pt-4 ${inFlow ? 'pb-12' : 'pb-28 md:pb-12 md:pl-64'}`}>
-        <div className="mx-auto w-full max-w-xl">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/new" element={<NewPlan />} />
-            <Route path="/plans" element={<Plans />} />
-            <Route path="/groups" element={<Groups />} />
-            <Route path="/g/:id" element={<GroupPage />} />
-            <Route path="/p/:id" element={<PlanPage />} />
-            <Route path="/p/:id/answer" element={<Join />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/about" element={<About />} />
-          </Routes>
-        </div>
-      </main>
+      <Routes>
+        <Route path="/" element={<AppBook left={<Home />} right={<HomeRight />} />} />
+        <Route path="/plans" element={<AppBook left={<Plans />} right={<PlansRight />} />} />
+        <Route path="/groups" element={<AppBook left={<Groups />} />} />
+        <Route path="/g/:id" element={<AppBook left={<GroupPage />} />} />
+        <Route path="/settings" element={<AppBook left={<SettingsPage />} right={<AboutRight />} />} />
+        <Route path="/about" element={<AppBook left={<About />} right={<AboutRight />} />} />
+        <Route path="/new" element={<PlanBook />} />
+        <Route path="/p/:id" element={<PlanBook />} />
+        <Route path="/p/:id/answer" element={<OldAnswerLink />} />
+      </Routes>
     </ToastProvider>
   )
 }
