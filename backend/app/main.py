@@ -234,10 +234,18 @@ class Join(BaseModel):
 def join(pid: str, body: Join):
     plan = _plan(pid)
     members = _members(pid)
+    unclaimed = [x for x in members if not x.get("is_planner") and not x.get("claimed")]
+    if not body.claim:
+        # Typed the same name the planner added instead of tapping it: that's them, not a second "Sam"
+        same = [x for x in unclaimed if x["name"].strip().lower() == body.name.strip().lower()]
+        if len(same) == 1:
+            body.claim = same[0]["pub"]
     if body.claim:
-        m = next((x for x in members if x["pub"] == body.claim and not x.get("is_planner") and not x.get("claimed")), None)
+        m = next((x for x in unclaimed if x["pub"] == body.claim), None)
         if m:
-            store().update("members", m["id"], {"claimed": True, "tz": body.tz, "name": body.name.strip()[:40] or m["name"]})
+            typed = body.name.strip()[:40]
+            name = m["name"] if typed.lower() == m["name"].strip().lower() else typed or m["name"]
+            store().update("members", m["id"], {"claimed": True, "tz": body.tz, "name": name})
             return {"member_id": m["id"]}
     if not body.name.strip():
         raise HTTPException(400, "Tell us what to call you.")

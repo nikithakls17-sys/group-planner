@@ -38,7 +38,8 @@ def test_plan_end_to_end(monkeypatch):
     assert view["stage"] == "answers" and len(view["members"]) == 3
     ben_pub = next(m["pub"] for m in view["members"] if m["name"] == "Ben")
     ben = c.post(f"/api/plans/{pid}/join", json={"name": "Ben", "claim": ben_pub, "tz": TZ}).json()["member_id"]
-    cy = c.post(f"/api/plans/{pid}/join", json={"name": "Cy", "tz": TZ}).json()["member_id"]  # new person, not claimed
+    cy = c.post(f"/api/plans/{pid}/join", json={"name": "cy ", "tz": TZ}).json()["member_id"]  # typed, not tapped: still claims Cy
+    assert len(c.get(f"/api/plans/{pid}").json()["members"]) == 3
     picks = {"budget": "small", "moods": ["games"], "where": "online"}
     for mid in (asha, ben):
         c.patch(f"/api/plans/{pid}/me", headers={"X-Member": mid},

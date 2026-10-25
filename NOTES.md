@@ -102,3 +102,16 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
 - Phone: bottom bar Home / Plans / Groups. Laptop: same three as a left sidebar. The step-by-step flows hide the nav.
 - I'm bored (first version): opens the planner flow already set to "today or tomorrow", starting at "Who's coming?".
 - Honest limit: anyone with a group's link id can delete that group. The id is unguessable and never shown to members.
+
+## First live run: hosted Gemma + Atlas (Oct 26)
+
+- Plan: online call, Niki in Bengaluru + Sam in Chicago, both typed their free times.
+- "Type it" with `gemma-4-31B-it` on DigitalOcean: 2.6-3.9 s. "saturday morning till noon, sunday 8 to 11 am" in
+  Chicago came back as 14:00-17:00 UTC on both days, which is right: US clocks change on Nov 1, so 9 AM CDT Saturday
+  and 8 AM CST Sunday are both 14:00 UTC.
+- Options: 4.8 s, 3 of 3 passed the checker on the first try (online only, no SerpApi key yet). Best window was
+  8 PM India / 9:30 AM Chicago.
+- Bug: Sam typed "sam" instead of tapping the "Are you Sam?" chip and became a second Sam, so the plan kept waiting
+  on the first one. Fix: if a typed name matches exactly one unclaimed invited name, it claims it (keeping the
+  planner's spelling). Covered in the flow test.
+- Gemma's "why" lines are generic ("caters to both users' interests"). Prompt tuning later.
