@@ -6,3 +6,4 @@ httpx==0.28.1
 pymongo==4.10.1
 sentry-sdk[fastapi]==2.19.2
 pytest==8.3.4
+tzdata==2024.2

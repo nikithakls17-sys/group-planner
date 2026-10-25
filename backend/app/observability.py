@@ -30,6 +30,15 @@ def gen_ai_span(operation: str, model: str, system: str, **attrs):
         yield span
 
 
+@contextmanager
+def tool_span(tool: str, detail: str):
+    """SerpApi, geocoding and weather calls show up as tool calls in the same agent trace."""
+    with sentry_sdk.start_span(op="gen_ai.execute_tool", name=f"{tool} {detail}") as span:
+        span.set_data("gen_ai.tool.name", tool)
+        span.set_data("gen_ai.tool.input", detail)
+        yield span
+
+
 def report_issue(message: str, level: str = "warning", **tags) -> None:
     """Validator failures become Sentry issues, tagged so they group by prompt version and rubric item."""
     with sentry_sdk.new_scope() as scope:
