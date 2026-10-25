@@ -85,3 +85,20 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   lines), ErrorBox, Field.
 - `APP_NAME` lives in `frontend/src/config.ts` and `backend/app/config.py`.
 - A long bash heredoc with JSX in it broke the shell ("unexpected EOF"); wrote those files directly instead.
+
+## Screens (Oct 26)
+
+- Home (headline in Caveat, Plan something, I'm bored, your plans with a tracker each), planner flow (8 one-question
+  screens + Send the invite), member flow (invite, name + color, city, when free, quick picks, done), plan page,
+  Plans tab, Groups tab + group page with planning-load bars and "Delete this group and all its data".
+- No accounts: the browser remembers your plans, groups, name, city, last picks and "I'm usually free" text in
+  localStorage. The planner draft autosaves on every tap, and each member answer is saved to the server on Next.
+- Availability: "Type it" (Gemma turns text into slots, shown back as removable chips) or "Tap times" (days x
+  Morning/Afternoon/Evening/Late grid, converted to UTC in the browser). Google Calendar comes with Auth0 later.
+- A name the planner added can be claimed ("Are you one of them?") so the colors and names line up.
+- The plan page polls every 8 s and starts generating options by itself once the answers are in, with friendly
+  loading lines. Per-person distance (colored initials + km) is computed server-side from city coordinates.
+- Share: Web Share API (falls back to copy), copy, mailto email, QR code (`qrcode` package), editable message.
+- Phone: bottom bar Home / Plans / Groups. Laptop: same three as a left sidebar. The step-by-step flows hide the nav.
+- I'm bored (first version): opens the planner flow already set to "today or tomorrow", starting at "Who's coming?".
+- Honest limit: anyone with a group's link id can delete that group. The id is unguessable and never shown to members.

@@ -120,7 +120,13 @@ def _view(plan: dict, me: dict | None) -> dict:
     if chosen and chosen["kind"] == "home" and me and me.get("confirm") == "yes":
         host = store().get("members", chosen.get("host_id") or "")
         address = (host or {}).get("host_address")  # only for confirmed members, only after locking
-    opts = [{k: v for k, v in o.items() if k != "host_id"} | {"host_pub": pub.get(o.get("host_id"))}
+    def distances(o):
+        if o.get("lat") is None or o["kind"] == "online":
+            return {}
+        return {m["pub"]: round(places.km((m["lat"], m["lon"]), (o["lat"], o["lon"])), 1)
+                for m in members if m.get("lat") is not None and m["status"] == "answered"}
+
+    opts = [{k: v for k, v in o.items() if k != "host_id"} | {"host_pub": pub.get(o.get("host_id")), "distances": distances(o)}
             for o in plan.get("options") or []]
     return {
         "id": plan["id"], "title": plan["title"], "kind": plan["kind"], "kind_other": plan.get("kind_other"),
