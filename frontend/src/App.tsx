@@ -25,7 +25,7 @@ function AppLayout() {
   const nav = useNavigate()
   const active = APP_TABS.find((t) => t.key !== '/' && loc.pathname.startsWith(t.key))?.key ?? (loc.pathname.startsWith('/g/') ? '/groups' : '/')
   return (
-    <Book tabs={APP_TABS} active={active} onTab={(k) => nav(k)}
+    <Book tabs={[]} menu={APP_TABS} active={active} onTab={(k) => nav(k)} onMenu={(k) => nav(k)}
       headLeft="Nobody Plans" headRight={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
       left={outlet} right={RIGHT[active]} />
   )

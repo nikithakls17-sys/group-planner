@@ -30,10 +30,13 @@ const FLIP_MS = 900
  *  tab dividers out of the right edge. Phone: one page, tabs as a strip along the top.
  *  Turning a page works like a real book: going forward, the right page lifts and turns over the spine (its front
  *  is the page you were reading, its back is the new left page); going back, the left page turns the other way. */
-export default function Book({ tabs, active, onTab, headLeft, headRight, left, right }: {
+export default function Book({ tabs, active, onTab, menu = [], onMenu, headLeft, headRight, left, right }: {
   tabs: BookTab[]
   active: string
   onTab: (key: string) => void
+  /** the app's main menu (Home, Plans, Groups...), on the LEFT edge; a plan's own tabs are on the right */
+  menu?: BookTab[]
+  onMenu?: (key: string) => void
   headLeft?: ReactNode
   headRight?: ReactNode
   left: ReactNode
@@ -47,12 +50,12 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
   useLayoutEffect(() => {
     const prev = last.current
     if (prev.active !== active && !reduceMotion()) {
-      const order = tabs.map((t) => t.key)
+      const order = [...menu, ...tabs].map((t) => t.key)
       const fwd = order.indexOf(active) >= order.indexOf(prev.active)
       setLeaf({ dir: fwd ? 'fwd' : 'back', n: Date.now(), front: fwd ? prev.right : prev.left, back: fwd ? left : right, phoneFront: prev.left })
     }
     last.current = { active, left, right }
-  }, [active, left, right, tabs])
+  }, [active, left, right, tabs, menu])
 
   useEffect(() => {
     if (!leaf) return
@@ -75,10 +78,21 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
 
   return (
     <div className="mx-auto w-full max-w-[1240px] md:px-14 md:py-8">
-      {/* phone: clip + tab strip */}
+      {/* phone: main menu row, clip, then the plan's tab strip */}
       <div className="md:hidden">
+        {menu.length > 0 && (
+          <nav aria-label="Main menu" className="flex gap-1 overflow-x-auto px-3 pt-2">
+            {menu.map((t) => (
+              <button key={t.key} type="button" onClick={() => onMenu?.(t.key)} aria-current={t.key === active ? 'page' : undefined}
+                className={`on-pastel min-h-10 shrink-0 border-2 px-3 text-sm font-semibold ${t.key === active ? 'border-ink' : 'border-transparent'}`}
+                style={{ background: t.color.hex }}>
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        )}
         <div className="flex justify-center pt-2"><Clip className="h-10 w-20 rotate-90" /></div>
-        <nav aria-label="Pages" className="-mb-px flex gap-1 overflow-x-auto px-3 pt-1">
+        {tabs.length > 0 && <nav aria-label="Pages" className="-mb-px flex gap-1 overflow-x-auto px-3 pt-1">
           {tabs.map((t) => (
             <button key={t.key} type="button" disabled={t.disabled} onClick={() => onTab(t.key)} aria-current={t.key === active ? 'page' : undefined}
               className={`on-pastel min-h-12 shrink-0 border-2 border-b-0 px-4 text-sm font-bold disabled:opacity-50 ${t.key === active ? 'border-ink pb-1' : 'border-transparent opacity-90'}`}
@@ -86,11 +100,23 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
               {t.label}
             </button>
           ))}
-        </nav>
+        </nav>}
       </div>
 
       <div className="relative">
-        <Clip className="absolute -left-9 top-24 z-40 hidden h-28 w-16 md:block" />
+        <Clip className="absolute -left-9 bottom-24 z-40 hidden h-28 w-16 md:block" />
+        {menu.length > 0 && (
+          <nav aria-label="Main menu" className="absolute -left-[92px] top-10 z-0 hidden w-[100px] flex-col gap-1.5 md:flex">
+            {menu.map((t) => (
+              <button key={t.key} type="button" onClick={() => onMenu?.(t.key)} aria-current={t.key === active ? 'page' : undefined}
+                className={`on-pastel min-h-12 border-2 border-r-0 pl-2 pr-4 text-right text-sm font-bold transition-transform ${
+                  t.key === active ? 'translate-x-0 border-ink' : 'translate-x-[8px] border-transparent hover:translate-x-[4px]'}`}
+                style={{ background: t.color.hex }}>
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        )}
         <nav aria-label="Pages" className="absolute -right-[92px] top-10 z-0 hidden w-[100px] flex-col gap-1.5 md:flex">
           {tabs.map((t) => (
             <button key={t.key} type="button" disabled={t.disabled} onClick={() => onTab(t.key)} aria-current={t.key === active ? 'page' : undefined}

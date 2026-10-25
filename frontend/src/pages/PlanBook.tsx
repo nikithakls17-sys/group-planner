@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { addDays, api, fmtDay, fmtRange, fmtTime, KIND_LABEL, local, myTz, names, parseDay, planName, ymd, type Member, type Option, type Picks, type Plan } from '../api'
+import { addDays, api, fmtDay, fmtRange, fmtTime, KIND_LABEL, local, myTz, names, parseDay, planName, ymd, type Member, type Option, type Plan } from '../api'
 import Book, { type BookTab } from '../components/Book'
 import Calendar from '../components/Calendar'
 import { useCalendarStatus } from '../components/FreeTimes'
 import LocationLine, { type Loc } from '../components/Location'
-import PicksForm, { DEFAULT_PICKS, summary } from '../components/PicksForm'
+import { summary } from '../components/PicksForm'
 import Share from '../components/Share'
 import TaskBoard from '../components/TaskBoard'
 import { Avatar, AvatarRow, Button, ChipGroup, ErrorBox, Field, Help, inputCls, Note, PageHeading, Progress, SubHeading, Tile, useToast, Working } from '../components/ui'
 import { PASTELS, PLAN_TABS, type PlanTab } from '../config'
+import { ActivityPage, BudgetPage, PlacePicker, PlacesProblem, PlacesWorking, WherePage } from './FlowPages'
 import GoPage from './GoPage'
 import MoneyPage from './MoneyPage'
+import { APP_TABS } from '../config'
 
 const KINDS = ['hangout', 'meal', 'date', 'call', 'trip', 'other']
 const KIND_SUB: Record<string, string> = {
@@ -22,14 +24,6 @@ const TIMES = [
   { value: 'morning', label: 'Morning', from: 9, to: 12 },
   { value: 'afternoon', label: 'Afternoon', from: 12, to: 17 },
   { value: 'evening', label: 'Evening', from: 17, to: 22 },
-]
-export const ACCESS = [
-  { value: 'step_free', label: 'Step-free / wheelchair access' },
-  { value: 'restroom', label: 'Accessible restroom' },
-  { value: 'seating', label: 'Seating available' },
-  { value: 'quiet', label: 'Quiet place' },
-  { value: 'parking', label: 'Close parking' },
-  { value: 'other', label: 'Other' },
 ]
 
 /** Free dates + optional time preferences -> slots. Skipped times = any reasonable time that day (8 AM-11 PM). */
@@ -73,7 +67,8 @@ export default function PlanBook() {
   const [busy, setBusy] = useState(false)
   const autoGen = useRef(false)
 
-  const tab = (params.get('tab') as PlanTab) || (id ? (member ? 'plans' : 'who') : 'what')
+  const raw = params.get('tab')
+  const tab = ((raw === 'plans' ? 'places' : raw) as PlanTab) || (id ? (member ? 'places' : 'who') : 'what')
   const setTab = useCallback((t: string) => setParams((p) => { p.set('tab', t); return p }, { replace: false }), [setParams])
 
   const load = useCallback(async () => {
@@ -102,15 +97,17 @@ export default function PlanBook() {
   useEffect(() => {
     if (plan && member && plan.status === 'answers' && plan.answers_ready && !plan.generating && !autoGen.current && !plan.problem) {
       autoGen.current = true
-      run(() => call('/generate'))
+      run(() => call('/places'))
     }
   }, [plan, member, run, call])
 
   const me = plan?.me ?? null
   const isPlanner = !id || !!plan?.is_planner
   const locked = plan?.status === 'locked' || plan?.status === 'confirmed'
+  const AFTER = ['wear', 'rides', 'map', 'money']
   const tabs: BookTab[] = PLAN_TABS
-    .filter((t) => (t.key === 'go' || t.key === 'money' ? locked : true))
+    .filter((t) => (AFTER.includes(t.key) ? locked : true))
+    .filter((t) => !(plan?.mode === 'online' && (t.key === 'rides' || t.key === 'map')))
     .map((t) => ({ key: t.key, label: t.key === 'dates' ? 'Dates' : t.label, color: t.color, disabled: !id ? t.key !== 'what' : !me && t.key !== 'who' && t.key !== 'what' }))
   const tabColor = (PLAN_TABS.find((t) => t.key === tab) ?? PLAN_TABS[0]).color.deep
   const order = tabs.filter((t) => !t.disabled).map((t) => t.key)
@@ -149,9 +146,12 @@ export default function PlanBook() {
     case 'who': left = <WhoPage {...pageProps} />; break
     case 'dates': left = <DatesPage {...pageProps} />; break
     case 'budget': left = <BudgetPage {...pageProps} />; break
-    case 'plans': left = <PlansPage {...pageProps} />; break
+    case 'activity': left = <ActivityPage {...pageProps} />; break
+    case 'where': left = <WherePage {...pageProps} />; break
+    case 'places': left = <PlansPage {...pageProps} />; break
     case 'tasks': left = <TasksPage {...pageProps} />; break
-    case 'go': left = plan ? <GoPage plan={plan} member={member} call={call} run={run} busy={busy} color={tabColor} /> : null; break
+    case 'wear': case 'rides': case 'map':
+      left = plan ? <GoPage plan={plan} member={member} call={call} run={run} busy={busy} color={tabColor} section={tab} /> : null; break
     case 'money': left = plan ? <MoneyPage plan={plan} member={member} call={call} run={run} busy={busy} color={tabColor} /> : null; break
     default: left = <WhatPage {...pageProps} />
   }
@@ -162,6 +162,8 @@ export default function PlanBook() {
         tabs={tabs}
         active={tab}
         onTab={setTab}
+        menu={APP_TABS}
+        onMenu={(k) => nav(k)}
         headLeft={<button type="button" onClick={() => nav('/')} className="underline underline-offset-4">Nobody Plans</button>}
         headRight={plan ? planName(plan) : 'New plan'}
         left={<>{left}{err && <ErrorBox message={err} />}{nav2}</>}
@@ -191,6 +193,7 @@ function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps
   const nav = useNavigate()
   const [name, setName] = useState(local.name())
   const [kind, setKind] = useState(plan?.kind ?? 'hangout')
+  const [mode, setMode] = useState<'in_person' | 'online'>(plan?.mode ?? 'in_person')
   const [other, setOther] = useState(plan?.kind_other ?? '')
   const planner = plan?.members.find((m) => m.pub === plan.planner)
 
@@ -203,6 +206,7 @@ function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps
       const res = await api<{ plan_id: string; member_id: string }>('/plans', {
         body: { draft: true, tz: myTz(), planner: { name: name.trim() }, kind: k, kind_other: k === 'other' ? other : '', save_group_as: `${name.trim()}'s group` },
       })
+      await api(`/plans/${res.plan_id}`, { method: 'PATCH', member: res.member_id, body: { mode } })
       local.addPlan({ id: res.plan_id, member: res.member_id, title: KIND_LABEL[k] })
       const p = await api<Plan>(`/plans/${res.plan_id}`, { member: res.member_id })
       if (p.group_id) local.addGroup({ id: p.group_id, name: `${name.trim()}'s group` })
@@ -211,7 +215,7 @@ function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps
       window.location.reload()
       return
     }
-    await call('', { kind: k, kind_other: k === 'other' ? other : '' }, 'PATCH')
+    await call('', { kind: k, kind_other: k === 'other' ? other : '', mode }, 'PATCH')
     setTab('who')
   }
 
@@ -225,7 +229,15 @@ function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps
   }
   return (
     <>
-      <PageHeading color={color} sub="Tap one. That's the whole page.">What are we planning?</PageHeading>
+      <PageHeading color={color} sub="In person or online, then tap what it is.">What are we planning?</PageHeading>
+      <div className="grid grid-cols-2 border-2 border-ink" role="radiogroup" aria-label="In person or online">
+        {(['in_person', 'online'] as const).map((m) => (
+          <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => { setMode(m); if (plan) run(() => call('', { mode: m }, 'PATCH')) }}
+            className={`min-h-14 text-base font-bold ${mode === m ? 'bg-ink text-bg' : 'bg-surface'}`}>
+            {m === 'in_person' ? 'Meet in person' : 'Online'}
+          </button>
+        ))}
+      </div>
       {!plan && (
         <Field label="Your name">
           <input className={inputCls} value={name} autoComplete="given-name" onChange={(e) => setName(e.target.value)} />
@@ -405,56 +417,6 @@ function DatesPage({ plan, me, isPlanner, busy, run, call, color, setTab }: Page
   )
 }
 
-/* ---------------- Budget and distance ---------------- */
-
-function BudgetPage({ plan, me, isPlanner, busy, run, call, color, setTab }: PageProps) {
-  const [picks, setPicks] = useState<Picks>(() => ({ ...DEFAULT_PICKS, ...(local.lastPicks() ?? {}), ...(me?.picks ?? {}) }))
-  const [decide, setDecide] = useState(plan?.decide ?? 'everyone')
-  const access = (picks as Picks & { access?: string[] }).access ?? []
-  const accessOther = (picks as Picks & { access_other?: string }).access_other ?? ''
-  if (!plan || !me) return null
-  const plannerSet = plan.decide === 'planner' && !isPlanner
-
-  async function save() {
-    local.setLastPicks(picks)
-    if (isPlanner) await call('', { decide, details: decide === 'planner' ? picks : null }, 'PATCH')
-    await call('/me', { picks }, 'PATCH')
-    setTab('plans')
-  }
-
-  return (
-    <>
-      <PageHeading color={color} sub="Filled in from last time. Most people just tap Save.">Budget and distance</PageHeading>
-      {isPlanner && (
-        <div className="grid grid-cols-2 border-2 border-ink" role="radiogroup" aria-label="Who decides the details">
-          {(['everyone', 'planner'] as const).map((d) => (
-            <button key={d} type="button" role="radio" aria-checked={decide === d} onClick={() => setDecide(d)}
-              className={`min-h-12 px-2 text-sm font-semibold ${decide === d ? 'bg-ink text-bg' : 'bg-surface'}`}>
-              {d === 'everyone' ? 'Everyone picks' : 'I decide for everyone'}
-            </button>
-          ))}
-        </div>
-      )}
-      {plannerSet ? (
-        <p className="border-2 border-rule bg-surface p-4 text-base">{plan.members.find((m) => m.pub === plan.planner)?.name}'s thinking: <b>{summary(plan.details ?? {})}</b>.</p>
-      ) : (
-        <PicksForm member value={picks} onChange={setPicks} />
-      )}
-      {picks.where !== 'online' && (
-        <div className="flex flex-col gap-3 border-2 border-rule bg-surface p-4">
-          <span className="text-base font-semibold">Anything that would make a place easier for you? (optional)</span>
-          <p className="text-sm text-ink-soft">Private. Nobody in the group sees who asked; plans just say they were checked for everyone's access needs. Remembered for next time.</p>
-          <ChipGroup label="Access needs" multi options={ACCESS} value={access} onChange={(v: string[]) => setPicks({ ...picks, access: v } as Picks)} />
-          {access.includes('other') && (
-            <input className={inputCls} aria-label="Other access need" maxLength={80} value={accessOther} onChange={(e) => setPicks({ ...picks, access_other: e.target.value } as Picks)} />
-          )}
-        </div>
-      )}
-      <Button full disabled={busy} onClick={() => run(save, 'Saved')}>Save</Button>
-    </>
-  )
-}
-
 /* ---------------- Plans: answers, options as stickers, vote, the stamped plan ---------------- */
 
 function PlansPage({ plan, me, isPlanner, busy, run, call, color, setTab }: PageProps) {
@@ -463,11 +425,11 @@ function PlansPage({ plan, me, isPlanner, busy, run, call, color, setTab }: Page
   const answered = plan.members.filter((m) => m.status === 'answered')
   const waiting = plan.members.filter((m) => m.status === 'invited')
   const chosen = plan.options.find((o) => o.id === plan.chosen)
-  const generating = (busy && plan.status === 'answers' && plan.answers_ready) || plan.generating
+  const generating = plan.generating || (busy && plan.status === 'answers' && plan.answers_ready && !plan.places.length)
   const status = statusLine(plan, waiting, answered, generating)
   return (
     <>
-      <PageHeading color={color}>Plans</PageHeading>
+      <PageHeading color={color}>Places</PageHeading>
       <Progress stage={plan.stage} answers={`${answered.length} of ${plan.members.filter((m) => m.status !== 'declined').length}`} />
       <p className="text-lg font-semibold" aria-live="polite">{status}</p>
 
@@ -477,13 +439,7 @@ function PlansPage({ plan, me, isPlanner, busy, run, call, color, setTab }: Page
 
       {(plan.status === 'answers' || plan.status === 'draft') && !generating && (
         <div className="flex flex-col gap-3">
-          {plan.problem && (
-            <ErrorBox message={{
-              no_time: "Nobody's free times overlap enough yet. Ask people to add more dates.",
-              no_places: 'Nothing nearby fits yet. Try a wider distance or online.',
-              none_passed: 'Every idea broke a rule (budget, distance, time or access), so none are shown.',
-            }[plan.problem] ?? 'Something got stuck.'} fix="Try again" onFix={() => run(() => call('/generate'))} />
-          )}
+          {plan.problem && <PlacesProblem problem={plan.problem} onRetry={() => run(() => call('/places'))} />}
           {isPlanner && plan.deadline && (
             <Field label="Answers close">
               <input type="datetime-local" className={inputCls} defaultValue={toLocalInput(plan.deadline)}
@@ -493,11 +449,15 @@ function PlansPage({ plan, me, isPlanner, busy, run, call, color, setTab }: Page
           {isPlanner && waiting.length > 0 && answered.length >= 1 && (
             <Button variant="secondary" disabled={busy} onClick={() => run(() => call('/close-answers'))}>Don't wait, plan with who's answered</Button>
           )}
-          <Note>When the answers are in, options appear here by themselves.</Note>
+          <Note>When the answers are in, places appear here by themselves.</Note>
         </div>
       )}
 
-      {generating && <Working lines={[`Finding when all ${answered.length} of you are free...`, 'Checking places near everyone...', "Checking everyone's budget...", "Making sure it's open then...", "Checking everyone's access needs...", 'Almost there...']} />}
+      {generating && <PlacesWorking n={answered.length} />}
+
+      {plan.status === 'places' && !generating && (
+        <PlacePicker plan={plan} me={me} isPlanner={isPlanner} busy={busy} run={run} call={call} setTab={setTab} color={color} />
+      )}
 
       {plan.status === 'options' && (
         <div className="flex flex-col gap-6">
@@ -547,10 +507,15 @@ function statusLine(plan: Plan, waiting: Member[], answered: Member[], generatin
       if (generating) return 'Everyone has answered. Finding options now.'
       if (!waiting.length) return answered.length < 2 ? 'Waiting for at least one more person.' : 'Everyone has answered.'
       return `Waiting on ${names(waiting.map((m) => m.name))}.${dl ? ` Answers close ${dl}.` : ''}`
-    case 'options': return "Tap the ones you'd go to. It locks when more than half say I'm in."
+    case 'options': return plan.status === 'places' ? 'Pick up to 2 places. The one most people pick wins.' : "Tap the ones you'd go to. It locks when more than half say I'm in."
     case 'vote': {
       const voted = new Set(Object.values(plan.votes).flatMap((v) => [...v.in, ...v.maybe, ...v.cant]))
       const left = answered.filter((m) => !voted.has(m.pub))
+      if (plan.status === 'places') {
+        const pv = new Set(Object.values(plan.place_votes).flat())
+        const notYet = answered.filter((m) => !pv.has(m.pub))
+        return notYet.length ? `Waiting on ${names(notYet.map((m) => m.name))} to pick.` : 'Everyone has picked.'
+      }
       return left.length ? `Waiting on ${names(left.map((m) => m.name))} to vote.` : 'Everyone has voted.'
     }
     case 'tasks': {
@@ -611,7 +576,7 @@ function Stamped({ plan, chosen, byPub, busy, run, call, setTab }: { plan: Plan;
     <div className="flex flex-col gap-5">
       {me && me.status === 'answered' && !me.confirm && (
         <div className="flex flex-col gap-3 border-2 border-ink bg-surface p-4">
-          <p className="text-lg font-bold">This is happening: {chosen.title}. Still in?</p>
+          <p className="text-lg font-bold">Yay, plan fixed: {chosen.title}, {fmtRange(chosen.start, chosen.end)}. Still in?</p>
           <div className="grid grid-cols-2 gap-2">
             <Button disabled={busy} onClick={() => run(() => call('/confirm', { choice: 'yes' }), "You're confirmed")}>Confirm</Button>
             <Button variant="secondary" disabled={busy} onClick={() => run(() => call('/confirm', { choice: 'no' }), 'We let the group know')}>Can't anymore</Button>
@@ -640,8 +605,8 @@ function Stamped({ plan, chosen, byPub, busy, run, call, setTab }: { plan: Plan;
           : chosen.link ? <a className="inline-flex min-h-12 items-center justify-center border-2 border-ink px-4 font-semibold" href={chosen.link} target="_blank" rel="noreferrer">Open link</a> : null}
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="secondary" onClick={() => setTab('go')}>How are we getting there?</Button>
-        <Button variant="secondary" onClick={() => setTab('money')}>Receipts and bills</Button>
+        <Button variant="secondary" onClick={() => setTab('rides')}>How are we getting there?</Button>
+        <Button variant="secondary" onClick={() => setTab('wear')}>What are we wearing?</Button>
       </div>
       {plan.is_planner && (
         <details className="border-2 border-rule bg-surface p-4">

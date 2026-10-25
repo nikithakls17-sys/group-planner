@@ -54,6 +54,12 @@ export type Option = {
   when_text?: string
   distances?: Record<string, number>
   checked?: boolean
+  access?: 'ok' | 'unconfirmed'
+  activity?: string
+  website?: string
+  phone?: string
+  reservation?: string
+  thumbnail?: string
 }
 
 export type Task = {
@@ -100,6 +106,14 @@ export type Plan = {
   dropout?: { names: string[]; decided: string | null } | null
   checker?: { raw: number; passed: number; rejected: number; rules: string[] }
   created_at: string
+  mode?: 'in_person' | 'online'
+  budget_mode?: 'each' | 'shared'
+  budget_limit?: number | null
+  places: Option[]
+  place_votes: Record<string, string[]>
+  tallies?: { activities: { name: string; pubs: string[] }[]; duration?: string | null; distance?: string | null }
+  lowest_budget?: number | null
+  access_note?: string | null
 }
 
 export type Group = { id: string; name: string; members: { name: string; color: string; email: string; load: number }[]; plans: { id: string; title: string; stage: string; created_at: string }[] }

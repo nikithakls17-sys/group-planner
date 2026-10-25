@@ -178,7 +178,8 @@ Places you may choose from (copy the ref exactly, never invent one):
 {chr(10).join(lines)}
 {fb}
 Pick the {n} best places, mixing the activities people voted for (more votes = more places).
-Return JSON {{"places": [{{"ref": "...", "cost_per_person": 0, "why": "one short sentence for this group"}}]}}
+Return JSON {{"places": [{{"ref": "...", "cost_per_person": 0, "why": "one friendly sentence on what makes this place good for this outing"}}]}}
+In "why", talk about the place itself (vibe, food, space, view). Never mention votes, majorities, ratings numbers or budgets.
 cost_per_person is a realistic number in dollars for one person there."""
 
 

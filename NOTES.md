@@ -254,3 +254,19 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   An `<Outlet/>` always renders the current route, so the app layout passes `useOutlet()` (a snapshot of that page)
   instead, otherwise the leaf showed the new page on both sides.
 - Settings > Motion: Match my device / Always flip pages / Reduce motion.
+
+## Round 4c: new flow screens + main menu on the left (Oct 26)
+
+- Plan book tabs are now What (in person / online first, then the kind), Who, Dates, Budget, Activity, Where,
+  Places, Tasks; Wear, Rides, Map and Money appear only once the plan is fixed (Rides and Map are hidden for online
+  plans). The app's main menu (Home, Plans, Groups, Settings, About) sits on the LEFT edge of the book, the plan's
+  tabs on the right; on phones the main menu is a small row above the plan's tab strip. The binder clip moved lower.
+- Budget: the planner picks "Everyone sets their own" or "One limit for everyone" (amount). Activity: chips + your
+  own, and a live "What the group picked" list with faces and a Majority tag. Where: starting point (detected,
+  "Change location"), how far, how long, car, can host, and the private access-needs chips. Places: stickers, pick
+  up to 2, faces show who picked what, the planner can "Fix this one"; "Yay, plan fixed" then asks Still in?.
+- 24 member colors now (the 5 swatches + 19 more pastels), picked per plan on the Who page.
+- Live run (Bengaluru, 2 people, $20 shared limit, cafe + park, one step-free need): 14.3 s, 16 places searched,
+  6 passed, cafes and a park, the two with a confirmed wheelchair-accessible entrance first, the rest marked
+  "unconfirmed". Gemma's reasons said things like "to satisfy the minority vote"; the prompt now says to talk about
+  the place itself and never mention votes, ratings or budgets.

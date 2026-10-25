@@ -19,6 +19,16 @@ export const PASTELS = [
   { hex: '#D9A58A', deep: '#7d4429', name: 'clay' },
   { hex: '#A8DCC4', deep: '#2f6b52', name: 'mint' },
   { hex: '#C9C3BA', deep: '#57514a', name: 'stone' },
+  { hex: '#FFCBA4', deep: '#8a4a1f', name: 'apricot' },
+  { hex: '#F7A8A8', deep: '#9a2f2f', name: 'blush' },
+  { hex: '#D8E28A', deep: '#56621a', name: 'lime' },
+  { hex: '#B5E3E0', deep: '#2b6b67', name: 'aqua' },
+  { hex: '#E2C2F0', deep: '#6d3e85', name: 'orchid' },
+  { hex: '#F5E1C8', deep: '#6e5534', name: 'oat' },
+  { hex: '#C4D7F2', deep: '#34557f', name: 'cornflower' },
+  { hex: '#F2C6DE', deep: '#8a3a64', name: 'candy' },
+  { hex: '#CFE8B4', deep: '#466b25', name: 'pistachio' },
+  { hex: '#FFDFA0', deep: '#7d5a10', name: 'honey' },
 ]
 export const MEMBER_COLORS = PASTELS
 
@@ -30,10 +40,15 @@ export const PLAN_TABS = [
   { key: 'who', label: 'Who', color: PASTELS[1] },
   { key: 'dates', label: 'Dates', color: PASTELS[2] },
   { key: 'budget', label: 'Budget', color: PASTELS[3] },
-  { key: 'plans', label: 'Plans', color: PASTELS[4] },
-  { key: 'tasks', label: 'Tasks', color: PASTELS[5] },
-  { key: 'go', label: 'Go', color: PASTELS[6] },
-  { key: 'money', label: 'Money', color: PASTELS[7] },
+  { key: 'activity', label: 'Activity', color: PASTELS[4] },
+  { key: 'where', label: 'Where', color: PASTELS[5] },
+  { key: 'places', label: 'Places', color: PASTELS[6] },
+  { key: 'tasks', label: 'Tasks', color: PASTELS[7] },
+  // only once the plan is fixed
+  { key: 'wear', label: 'Wear', color: PASTELS[8] },
+  { key: 'rides', label: 'Rides', color: PASTELS[9] },
+  { key: 'map', label: 'Map', color: PASTELS[10] },
+  { key: 'money', label: 'Money', color: PASTELS[11] },
 ] as const
 export type PlanTab = (typeof PLAN_TABS)[number]['key']
 
