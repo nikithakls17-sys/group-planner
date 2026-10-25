@@ -89,6 +89,9 @@ def search_places(query: str, lat: float, lon: float, zoom: int = 13) -> list[di
             "lat": gps["latitude"], "lon": gps["longitude"], "rating": p.get("rating"),
             "price": p.get("price", ""), "type": p.get("type", ""), "types": p.get("types") or [],
             "hours": p.get("operating_hours") or None, "query": query,
+            "accessibility": [x for e in (p.get("extensions") or []) for x in (e.get("accessibility") or [])],
+            "phone": p.get("phone", ""), "website": p.get("website", ""), "thumbnail": p.get("thumbnail", ""),
+            "reservation": (p.get("order_online") or p.get("reserve_a_table") or ""),
             "link": f"https://www.google.com/maps/search/?api=1&query={p.get('title', '')}&query_place_id={p.get('place_id', '')}",
         })
     return out

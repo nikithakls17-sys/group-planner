@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import calendar, config, llm, places, planner, tasks
+from . import calendar, config, flow, llm, places, planner, tasks
 from .observability import init_sentry
 from .store import now_iso, store
 from .times import parse_iso
@@ -88,7 +88,7 @@ def _tally(plan: dict, members: list[dict]) -> dict:
     pub = {m["id"]: m["pub"] for m in members}
     out = {o["id"]: {"in": [], "maybe": [], "cant": []} for o in plan.get("options") or []}
     for v in votes:
-        if v["option_id"] in out and v["member_id"] in pub:
+        if v["option_id"] in out and v["member_id"] in pub and v["choice"] in ("in", "maybe", "cant"):
             out[v["option_id"]][v["choice"]].append(pub[v["member_id"]])
     return out
 
@@ -99,7 +99,7 @@ def _attending(members: list[dict]) -> list[dict]:
 
 def _stage(plan: dict) -> str:
     s = plan["status"]
-    if s == "options":
+    if s in ("options", "places"):
         return "vote" if store().find("votes", plan_id=plan["id"]) else "options"
     return {"answers": "answers", "draft": "answers", "locked": "tasks", "confirmed": "confirmed"}.get(s, s)
 
@@ -117,6 +117,23 @@ def _public_member(m: dict, me: dict | None) -> dict:
     if me and me["id"] == m["id"]:
         out.update({k: m.get(k) for k in ("id", "email", "availability", "standing", "picks", "host_address", "avail_text")})
     return out
+
+
+def _lowest_budget(plan: dict, members: list[dict]):
+    if plan.get("budget_mode") == "shared":
+        return plan.get("budget_limit")
+    from .checker import budget_limit
+    limits = [b for b in (budget_limit(m) for m in members if m["status"] == "answered") if b is not None]
+    return min(limits) if limits else None
+
+
+def _access_note(plan: dict, me: dict | None, members: list[dict]) -> str | None:
+    """Only for the host of an at-home plan: how many guests have an access need, never who."""
+    chosen = next((o for o in plan.get("options") or [] if o["id"] == plan.get("chosen")), None)
+    if not (chosen and me and chosen.get("host_id") == me["id"]):
+        return None
+    n = sum(1 for m in members if m["id"] != me["id"] and "step_free" in ((m.get("picks") or {}).get("access") or []))
+    return f"{n} guest{'s' if n != 1 else ''} need{'s' if n == 1 else ''} step-free access." if n else None
 
 
 def _view(plan: dict, me: dict | None) -> dict:
@@ -151,6 +168,11 @@ def _view(plan: dict, me: dict | None) -> dict:
         "problem": plan.get("problem"), "windows": plan.get("windows") or [], "searched": plan.get("searched", 0),
         "tasks": task_list, "host_address": address, "dropout": plan.get("dropout"),
         "checker": plan.get("checker_summary"), "created_at": plan["created_at"],
+        "mode": plan.get("mode", "in_person"), "budget_mode": plan.get("budget_mode", "each"), "budget_limit": plan.get("budget_limit"),
+        "places": [{k: v for k, v in pl.items() if k != "host_id"} | {"host_pub": pub.get(pl.get("host_id")), "distances": distances(pl)}
+                   for pl in plan.get("places") or []],
+        "place_votes": flow.place_tally(plan, members), "tallies": flow.tallies([dict(m) for m in members]),
+        "lowest_budget": _lowest_budget(plan, members), "access_note": _access_note(plan, me, members),
     }
 
 
@@ -633,6 +655,9 @@ class PlanUpdate(BaseModel):
     locks: dict | None = None
     work: str | None = None
     deadline: str | None = None
+    mode: str | None = None  # in_person | online
+    budget_mode: str | None = None  # each | shared
+    budget_limit: float | None = None
     send: bool = False  # last step: invite sent, answers open
 
 
@@ -654,6 +679,10 @@ def update_plan(pid: str, body: PlanUpdate, x_member: str | None = Header(None))
             fields["start_day"], fields["end_day"] = ds[0], ds[-1]
     if body.decide == "everyone":
         fields["details"] = None
+    if "mode" in fields and fields["mode"] not in ("in_person", "online"):
+        raise HTTPException(400, "mode must be in_person or online")
+    if "budget_mode" in fields and fields["budget_mode"] not in ("each", "shared"):
+        raise HTTPException(400, "budget_mode must be each or shared")
     if body.send:
         if not (fields.get("dates") or plan.get("dates") or plan.get("start_day")):
             raise HTTPException(400, "Pick at least one possible date first.")
@@ -796,6 +825,93 @@ def remove_person(pid: str, pub: str, x_member: str | None = Header(None)):
     for t in store().find("tasks", plan_id=pid, assignee=m["id"]):
         _reassign(plan, t)
     return _view(_plan(pid), _me(pid, x_member))
+
+
+# ---------- places: the checked list everyone picks from (up to 2 each) ----------
+
+@app.post("/api/plans/{pid}/places")
+async def build_places(pid: str, x_member: str | None = Header(None)):
+    plan = _plan(pid)
+    _need_me(pid, x_member)
+    if plan["status"] not in ("answers", "places"):
+        raise HTTPException(400, "This plan already has a place.")
+    with _gen_lock:
+        if pid in _generating:
+            return _view(plan, _me(pid, x_member))
+        _generating.add(pid)
+    try:
+        if plan["status"] == "answers" and not _answers_ready(plan, _members(pid)):
+            raise HTTPException(400, "Still waiting on answers.")
+        res = await run_in_threadpool(flow.build_places, plan, _members(pid))
+        fields = {"places": res["places"], "windows": res["windows"], "problem": res["problem"], "searched": res["searched"],
+                  "checker_summary": {"raw": len(res["places"]) + len([r for r in res["rejected"] if r["stage"] != "code"]),
+                                      "passed": len(res["places"]), "rejected": len(res["rejected"]),
+                                      "rules": sorted({f["rule"] for r in res["rejected"] for f in r["fails"]}),
+                                      "llm_error": res.get("llm_error")}}
+        if res["places"]:
+            fields["status"] = "places"
+            for v in store().find("votes", plan_id=pid, choice="place"):
+                store().delete("votes", v["id"])
+        store().update("plans", pid, fields)
+    finally:
+        _generating.discard(pid)
+    return _view(_plan(pid), _me(pid, x_member))
+
+
+class PlaceVote(BaseModel):
+    ids: list[str]  # up to 2 place ids
+
+
+@app.post("/api/plans/{pid}/place-vote")
+def place_vote(pid: str, body: PlaceVote, x_member: str | None = Header(None)):
+    plan = _plan(pid)
+    me = _need_me(pid, x_member)
+    if plan["status"] != "places":
+        raise HTTPException(400, "Place voting is closed.")
+    ids = list(dict.fromkeys(body.ids))
+    if len(ids) > 2:
+        raise HTTPException(400, "Pick up to 2 places.")
+    valid = {p["id"] for p in plan.get("places") or []}
+    if any(i not in valid for i in ids):
+        raise HTTPException(400, "That place isn't on the list.")
+    for v in store().find("votes", plan_id=pid, member_id=me["id"], choice="place"):
+        store().delete("votes", v["id"])
+    for i in ids:
+        store().insert("votes", {"id": token(), "plan_id": pid, "member_id": me["id"], "option_id": i, "choice": "place",
+                                 "created_at": now_iso()})
+    if me["status"] == "invited":
+        store().update("members", me["id"], {"status": "answered"})
+    win = flow.winner(plan, _members(pid))
+    if win:
+        _fix_place(plan, win)
+    return _view(_plan(pid), store().get("members", me["id"]))
+
+
+class Fix(BaseModel):
+    place_id: str | None = None
+
+
+@app.post("/api/plans/{pid}/fix")
+def fix_place(pid: str, body: Fix, x_member: str | None = Header(None)):
+    """The planner fixes the place now (their pick, or the one with the most votes)."""
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    if plan["status"] != "places":
+        raise HTTPException(400, "Nothing to fix yet.")
+    win = body.place_id or flow.winner(plan, _members(pid), force=True)
+    if win not in {p["id"] for p in plan.get("places") or []}:
+        raise HTTPException(400, "That place isn't on the list.")
+    _fix_place(plan, win)
+    return _view(_plan(pid), _me(pid, x_member))
+
+
+def _fix_place(plan: dict, place_id: str):
+    """Yay, plan fixed: the place becomes the chosen plan, tasks are set and everyone is asked to confirm."""
+    place = next(p for p in plan["places"] if p["id"] == place_id)
+    opt = flow.to_option(place)
+    store().update("plans", plan["id"], {"options": [opt]})
+    plan = {**plan, "options": [opt]}
+    _lock(plan, opt["id"])
 
 
 # ---------- calendar ----------

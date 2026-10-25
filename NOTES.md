@@ -216,3 +216,28 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   "Wheelchair accessible restroom", "Wheelchair accessible parking lot", "Wheelchair accessible seating", plus
   phone, website and opening hours, which the access check and task help will use. Bengaluru results had no
   `price` field, so cost will lean on Gemma's estimate checked against the group budget.
+
+## Round 4b: backend for budget -> activity -> distance/time -> places vote (Oct 26)
+
+- Niki's new flow: What asks in person or online first (never again), then Who, Dates, Budget (everyone sets their
+  own, or one shared per-person limit), Activity (anyone adds their own; everyone sees who picked what and the
+  majority), Distance and time, then a final list of real places where each person picks up to 2 and the majority
+  wins, then "plan fixed" and everyone confirms. After that: dress code, rides, map, reminders, task help, money.
+- `flow.py`: tallies are public (activities with who picked them, majority duration and distance); budgets and
+  access needs stay private (only the lowest budget is shown, never whose). `build_places`: best time windows
+  (the picked dates, majority duration, best-day preferences) -> SerpApi for the top 3 activities near the group's
+  midpoint (or the curated online list) + "at X's home" for hosts -> a code-only filter first (distance, opening
+  hours in the first window where it's open, access) so Gemma only sees places that can work -> Gemma ranks up to 6,
+  estimates cost and writes one line on why -> the checker has the last word, one retry with the reasons named.
+- Access check: Google's `extensions.accessibility` facts are matched to needs (step-free -> "wheelchair accessible
+  entrance", restroom, parking, seating). An explicit "No wheelchair accessible entrance" is a reject; missing data is
+  "unconfirmed" (shown as "Access not confirmed, call ahead") and sorted after confirmed places. "Quiet" has no data,
+  so it can never be "ok". Rejections never name the person. Hosts of at-home plans get a private count
+  ("1 guest needs step-free access").
+- Votes: up to 2 places each. A place wins with more than half of the people who answered; if everyone has voted
+  without a majority, the most votes wins (ties: higher-ranked). The planner can fix it early. Fixing turns the
+  place into the chosen plan, makes tasks and asks everyone to confirm, reusing the existing lock/confirm code.
+- Bug: the old "I'm in / Maybe / Can't" tally crashed on place votes (`KeyError: 'place'`) because both live in the
+  `votes` collection; the tally now ignores other choices.
+- Test with 5 real-shaped cafes: stairs-only, closed and far ones are dropped before Gemma; Gemma's invented place
+  and duplicate are dropped by the checker; the 2 votes fix "Step Free Cafe"; both confirm. 22 tests pass.

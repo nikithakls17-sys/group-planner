@@ -6,7 +6,41 @@ from .times import is_free, local_ok, parse_iso
 
 BUDGET = {"free": 0, "small": 15, "medium": 40, "big": None, "nopref": None}
 RULES = ["invented_place", "time_window", "local_time", "budget", "cost_too_low", "distance",
-         "closed", "event_date", "notes", "locks"]
+         "closed", "event_date", "notes", "locks", "access"]
+
+# Access needs -> what Google Maps says when a place meets them. "quiet" and "other" have no data, so they can
+# only ever be "not confirmed".
+ACCESS_FACTS = {
+    "step_free": "wheelchair accessible entrance",
+    "restroom": "wheelchair accessible restroom",
+    "parking": "wheelchair accessible parking",
+    "seating": "wheelchair accessible seating",
+}
+
+
+def access_status(cand: dict, needs: set[str]) -> tuple[str, list[str]]:
+    """('ok' | 'unconfirmed' | 'fails', unmet needs). Missing data is never assumed fine."""
+    if not needs:
+        return "ok", []
+    facts = [f.lower() for f in cand.get("accessibility") or []]
+    if cand.get("kind") == "online":
+        return "ok", []
+    fails, unknown = [], []
+    for n in needs:
+        fact = ACCESS_FACTS.get(n)
+        if not fact:
+            unknown.append(n)
+        elif any(f.startswith("no ") and fact in f for f in facts):
+            fails.append(n)
+        elif not any(fact in f and not f.startswith("no ") for f in facts):
+            unknown.append(n)
+    if fails:
+        return "fails", fails
+    return ("unconfirmed", unknown) if unknown else ("ok", [])
+
+
+def group_access_needs(members: list[dict]) -> set[str]:
+    return {n for m in members for n in ((m.get("picks") or {}).get("access") or []) if n}
 
 # "Anything we should know" notes -> place words that break them
 NOTE_CONFLICTS = {
@@ -20,6 +54,8 @@ NOTE_CONFLICTS = {
 
 def budget_limit(member: dict) -> float | None:
     picks = member.get("picks") or {}
+    if picks.get("shared_limit") is not None:  # "one limit for everyone" set by the group
+        return float(picks["shared_limit"])
     if picks.get("budget") == "custom" and picks.get("budget_custom") not in (None, ""):
         return float(picks["budget_custom"])
     return BUDGET.get(picks.get("budget") or "nopref")
@@ -119,6 +155,12 @@ def check(option: dict, ctx: dict) -> list[dict]:
                     break
             if ("wheelchair" in note or "accessib" in note) and cand.get("accessible") is False:
                 fail("notes", f"{cand['title']} is not wheelchair accessible ({m['name']})")
+
+    if cand and kind in ("place", "event"):
+        status, unmet = access_status(cand, group_access_needs(free))
+        if status == "fails":
+            # never say whose need it is
+            fail("access", f"{cand['title']} doesn't meet a group access need ({', '.join(sorted(unmet))})")
 
     locks = ctx.get("locks") or {}
     ptz = ZoneInfo(ctx["planner_tz"])
