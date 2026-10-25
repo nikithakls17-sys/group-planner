@@ -139,3 +139,33 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
 - Members can send `lat`/`lon` detected in the browser instead of typing a city.
 - Bug: the new `/tasks/{id}/move` route was swallowed by the older `/tasks/{id}/{action}` route (FastAPI matches in
   order), so moves returned "unknown action". Renamed to `/task-move/{id}` and `/task-ask/{id}`. 19 tests pass.
+
+## Redesign round 2: fewer steps, new fonts and colors, settings, editing (Oct 26)
+
+- Feedback: text should look more like the reference posters, more color, an About page and Settings with light/dark,
+  editing a planned meeting (time, people, anything) and deleting it, and the fewest steps possible with swipe,
+  Back/Next everywhere, a tappable progress bar and nothing lost going back.
+- Fonts: Anton (the tall HOUSE PARTY headline) for headings, Permanent Marker (the COOL CAT hand lettering) for small
+  hand-written notes, Inter for body. Type scale moved to rem so "Large text" in Settings scales everything.
+- Color: five poster spot colors (green, tomato, mustard, sky, pink) used as blocks of paper (plan cards, kind tiles,
+  sections), never as text color, so contrast stays AA. Dark theme swaps paper and ink and darkens the spots.
+- Settings: Light / Dark / Match my phone, Normal / Large text, Normal / Reduce motion, name, usual color, "Forget
+  everything on this device". The theme is applied by a tiny inline script in index.html before React loads, so
+  there's no flash of the wrong theme. About page: 5 numbered steps, Cal's intro, why open source, stack.
+- Step counts (the number Niki asked for):
+  - Planner: 5 steps + the send screen. 1 Who (name, auto location, group name, people, and the group link with
+    QR/Share appears right there), 2 What (tapping a tile moves on), 3 When (calendar + "This weekend" + my free
+    times on the same screen), 4 Details (who decides, picks, which day suits best with everyone's faces per day,
+    optional start/end), 5 Tasks and deadline (fair task table with drag and drop + answer-by). Was 8 + send.
+  - Friend: 3 steps + a done screen. 1 You (the invite text, "Can't make it", name, color, auto location),
+    2 Free times (calendar of the planner's days + tap/type/Google), 3 Quick picks (pre-filled from last time, best
+    day). Was invite + 5 steps + done.
+- Navigation: Back and Next on every step; swipe right = Back, swipe left = Next (ignored when starting on an input or
+  the task table, and Next only fires when it's allowed); every step in the bar is tappable once the plan exists.
+  Planner draft and friend answers are mirrored to localStorage on every change, so going back or closing the tab
+  loses nothing.
+- Editing: planner can edit dates/details/tasks before options exist (same flow, opened at "When"), and after a
+  plan is picked can move its time (`PATCH /chosen`: everyone confirms again, task due dates move), rename it, remove
+  a person (their votes go, their tasks are reassigned), or delete the plan completely. Test added; 20 pass.
+- Location: detected in the browser and rounded to ~1 km before reverse-geocoding to a city (BigDataCloud's free
+  client endpoint, no key). Needs https, so on the local Wi-Fi test link it falls back to typing a city.

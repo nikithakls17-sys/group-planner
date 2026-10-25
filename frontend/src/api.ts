@@ -10,6 +10,7 @@ export type Member = {
   confirm?: 'yes' | 'no' | null
   is_planner?: boolean
   has_answers?: boolean
+  free_days?: string[]
   id?: string
   email?: string
   availability?: { start: string; end: string }[]
@@ -29,6 +30,7 @@ export type Picks = {
   car?: string
   notes?: string
   can_host?: boolean
+  best_day?: string
 }
 
 export type Option = {
@@ -62,6 +64,7 @@ export type Task = {
   due: string
   done: boolean
   swap_open: boolean
+  swap_to?: string | null
   mine: boolean
 }
 
@@ -72,9 +75,10 @@ export type Plan = {
   kind_other?: string
   start_day: string
   end_day: string
+  dates: string[]
   decide: 'everyone' | 'planner'
   details?: Picks | null
-  locks: { place?: string; day?: string; time?: string }
+  locks: { place?: string; day?: string; time?: string; end_time?: string }
   work: 'share' | 'solo'
   deadline?: string
   status: string

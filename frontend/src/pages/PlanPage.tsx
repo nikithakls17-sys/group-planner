@@ -122,6 +122,9 @@ export default function PlanPage() {
       <Sheet open={menu} onClose={() => setMenu(false)} title="More">
         <div className="flex flex-col gap-3">
           <Button variant="secondary" onClick={() => { setMenu(false); setSharing(true) }}>Invite people</Button>
+          {plan.is_planner && (plan.status === 'draft' || plan.status === 'answers') && (
+            <Button variant="secondary" onClick={() => nav(`/new?plan=${id}`)}>Edit plan (dates, details, tasks)</Button>
+          )}
           {me && <Button variant="secondary" onClick={() => nav(`/p/${id}/answer`)}>Change my answers</Button>}
           {plan.group_id && <Button variant="secondary" onClick={() => nav(`/g/${plan.group_id}`)}>Open the group</Button>}
           {plan.is_planner && (

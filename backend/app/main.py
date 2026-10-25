@@ -8,10 +8,11 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import config, llm, places, planner, tasks
+from . import calendar, config, llm, places, planner, tasks
 from .observability import init_sentry
 from .store import now_iso, store
 from .times import parse_iso
+from zoneinfo import ZoneInfo
 
 init_sentry()
 app = FastAPI(title=config.APP_NAME)
@@ -21,7 +22,7 @@ _gen_lock = threading.Lock()
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "app": config.APP_NAME, "mode": config.MODE, "llm": config.LLM_PROVIDER, "model": llm.model_name(),
+    return {"ok": True, "app": config.APP_NAME, "calendar": calendar.ready(), "mode": config.MODE, "llm": config.LLM_PROVIDER, "model": llm.model_name(),
             "store": type(store()).__name__, "serpapi": bool(config.SERPAPI_KEY)}
 
 
@@ -103,10 +104,16 @@ def _stage(plan: dict) -> str:
     return {"answers": "answers", "draft": "answers", "locked": "tasks", "confirmed": "confirmed"}.get(s, s)
 
 
+def _free_days(m: dict) -> list[str]:
+    """Which dates someone is free on, in their own time zone. Shown on the availability overview; no times."""
+    tz = ZoneInfo(m.get("tz") or "UTC")
+    return sorted({parse_iso(s["start"]).astimezone(tz).date().isoformat() for s in m.get("availability") or []})
+
+
 def _public_member(m: dict, me: dict | None) -> dict:
     out = {"pub": m["pub"], "name": m["name"], "color": m["color"], "status": m["status"], "tz": m.get("tz"),
            "city": m.get("city", ""), "confirm": m.get("confirm"), "is_planner": m.get("is_planner", False),
-           "has_answers": bool(m.get("availability"))}
+           "has_answers": bool(m.get("availability")), "free_days": _free_days(m)}
     if me and me["id"] == m["id"]:
         out.update({k: m.get(k) for k in ("id", "email", "availability", "standing", "picks", "host_address", "avail_text")})
     return out
@@ -490,7 +497,7 @@ def task_action(pid: str, tid: str, action: str, x_member: str | None = Header(N
             raise HTTPException(403, "You can only offer your own tasks.")
         store().update("tasks", tid, {"swap_open": True, "swap_since": now_iso()})
     elif action == "unswap":
-        store().update("tasks", tid, {"swap_open": False, "swap_since": None})
+        store().update("tasks", tid, {"swap_open": False, "swap_since": None, "swap_to": None})
     elif action == "take":
         if not t["swap_open"] or t["assignee"] == me["id"]:
             raise HTTPException(400, "This task isn't up for swapping.")
@@ -675,6 +682,21 @@ def plan_tasks(pid: str, x_member: str | None = Header(None)):
     return _view(_plan(pid), _me(pid, x_member))
 
 
+@app.post("/api/plans/{pid}/people")
+def add_people(pid: str, body: list[Person], x_member: str | None = Header(None)):
+    """'Who's coming?' after the plan exists: add names (anyone else can still join from the link)."""
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    members = _members(pid)
+    have = {m["name"].strip().lower() for m in members}
+    used = [m["color"] for m in members]
+    for p in body:
+        if p.name.strip() and p.name.strip().lower() not in have:
+            _new_member(pid, p, used)
+            have.add(p.name.strip().lower())
+    return _view(_plan(pid), _me(pid, x_member))
+
+
 class Move(BaseModel):
     to: str  # pub id of the new owner
 
@@ -704,6 +726,74 @@ def ask_swap(pid: str, tid: str, body: Move, x_member: str | None = Header(None)
         raise HTTPException(400, "Pick someone else to ask.")
     store().update("tasks", tid, {"swap_open": True, "swap_since": now_iso(), "swap_to": target["id"]})
     return _view(_plan(pid), me)
+
+
+# ---------- edit a plan after it's made: time, people, title ----------
+
+class ChosenEdit(BaseModel):
+    start: str | None = None
+    end: str | None = None
+    title: str | None = None
+
+
+@app.patch("/api/plans/{pid}/chosen")
+def edit_chosen(pid: str, body: ChosenEdit, x_member: str | None = Header(None)):
+    """The planner moves the picked plan to another time (or renames it). Everyone is asked to confirm again."""
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    if plan["status"] not in ("locked", "confirmed"):
+        raise HTTPException(400, "Nothing is picked yet. Edit the plan details instead.")
+    opts = plan["options"]
+    opt = next(o for o in opts if o["id"] == plan["chosen"])
+    if body.title is not None and body.title.strip():
+        opt["title"] = body.title.strip()[:80]
+    moved = False
+    if body.start:
+        start = parse_iso(body.start)
+        end = parse_iso(body.end) if body.end else start + (parse_iso(opt["end"]) - parse_iso(opt["start"]))
+        if end <= start:
+            raise HTTPException(400, "The end has to be after the start.")
+        opt["start"], opt["end"] = start.isoformat(), end.isoformat()
+        moved = True
+    fields: dict = {"options": opts}
+    if moved:
+        fields["status"] = "locked"
+        for m in _members(pid):
+            if m["id"] != plan["planner_id"] and m.get("confirm") == "yes":
+                store().update("members", m["id"], {"confirm": None})
+        for t in store().find("tasks", plan_id=pid):
+            due = parse_iso(opt["start"]) - (timedelta(days=1) if t["weight"] >= 3 else timedelta(hours=3))
+            store().update("tasks", t["id"], {"due": due.isoformat()})
+    store().update("plans", pid, fields)
+    return _view(_plan(pid), _me(pid, x_member))
+
+
+@app.post("/api/plans/{pid}/rename")
+def rename(pid: str, body: ChosenEdit, x_member: str | None = Header(None)):
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    if not (body.title or "").strip():
+        raise HTTPException(400, "Give it a name.")
+    store().update("plans", pid, {"title": body.title.strip()[:80]})
+    return _view(_plan(pid), _me(pid, x_member))
+
+
+@app.delete("/api/plans/{pid}/people/{pub}")
+def remove_person(pid: str, pub: str, x_member: str | None = Header(None)):
+    """Take someone off the plan. Their votes go, their open tasks go back to the app to hand out."""
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    m = next((x for x in _members(pid) if x["pub"] == pub), None)
+    if not m:
+        raise HTTPException(404, "That person isn't in this plan.")
+    if m["id"] == plan["planner_id"]:
+        raise HTTPException(400, "You can't remove yourself. Delete the plan instead.")
+    for v in store().find("votes", plan_id=pid, member_id=m["id"]):
+        store().delete("votes", v["id"])
+    store().delete("members", m["id"])
+    for t in store().find("tasks", plan_id=pid, assignee=m["id"]):
+        _reassign(plan, t)
+    return _view(_plan(pid), _me(pid, x_member))
 
 
 # ---------- calendar ----------
