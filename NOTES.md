@@ -115,3 +115,27 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   on the first one. Fix: if a typed name matches exactly one unclaimed invited name, it claims it (keeping the
   planner's spelling). Covered in the flow test.
 - Gemma's "why" lines are generic ("caters to both users' interests"). Prompt tuning later.
+
+## Redesign round 1: poster/sketch style + backend for the new flow (Oct 26)
+
+- Testing feedback asked for a new planner order (group link first, then what, when with my own free times, who,
+  details, task table, deadline, send), auto location for friends, a step bar with tappable finished steps, square
+  corners everywhere, and a look based on Niki's references (Cool Cat Jazz Club, House Party, Dia dos Namorados,
+  Notion poster) plus "anthropomorphic" and "conceptual sketch" styles.
+- Style: cream paper (#f1ece1) with a faint SVG noise grain, black ink 2px boxes, one poster green (#0f8a43, white
+  text passes AA), printed offset shadow (3px 3px 0 ink) instead of soft blur, `border-radius: 0` on everything.
+  Type: Oswald uppercase for poster headings, Patrick Hand for hand-lettered notes, Inter for everything you need to
+  read fast. Small uppercase tracked labels like the "GOOD DRINKS - GOOD TUNES" line.
+- Mascot "Cal": an ink-line calendar page with eyes, cheeks (crosshatched), arms and legs, in 4 moods (sleepy, happy,
+  thinking, wave). The loading spinner is now Cal bobbing while thinking. Home has dashed, labelled slots for the
+  illustrations Niki will send.
+- Backend: plans can start as drafts (`draft: true`) so the group link works from step 1; `PATCH /api/plans/{id}`
+  (planner only) fills in kind, specific dates (not just a range), details, optional start/end time, work, deadline,
+  and `send`. Time-finding only looks at the picked dates, and ranks the day most people said "suits me best" right
+  after "most people free". Optional start + end time override the default length.
+- Task table before anything is chosen: jobs per plan kind (meal: book the table, split the bill...), split fairly.
+  The planner drags tasks between people (`task-move`); anyone can ask one person "Can we swap?" (`task-ask`), who can
+  take it or decline. Locking keeps the arranged table and only adds due dates (and a Host task for at-home plans).
+- Members can send `lat`/`lon` detected in the browser instead of typing a city.
+- Bug: the new `/tasks/{id}/move` route was swallowed by the older `/tasks/{id}/{action}` route (FastAPI matches in
+  order), so moves returned "unknown action". Renamed to `/task-move/{id}` and `/task-ask/{id}`. 19 tests pass.

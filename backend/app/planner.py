@@ -32,12 +32,13 @@ HOME_ACTIVITIES = "board games, movie night, potluck dinner, cook together, card
 
 # ---------- "Type it" availability ----------
 
-def parse_availability(text: str, tz: str, start_day: str, end_day: str) -> list[dict]:
-    days = []
-    d = date.fromisoformat(start_day)
-    while d <= date.fromisoformat(end_day) and len(days) < 21:
-        days.append(f"{d.isoformat()} ({d.strftime('%A')})")
-        d += timedelta(days=1)
+def parse_availability(text: str, tz: str, start_day: str, end_day: str, dates: list[str] | None = None) -> list[dict]:
+    if not dates:
+        dates, d = [], date.fromisoformat(start_day)
+        while d <= date.fromisoformat(end_day) and len(dates) < 21:
+            dates.append(d.isoformat())
+            d += timedelta(days=1)
+    days = [f"{x} ({date.fromisoformat(x).strftime('%A')})" for x in dates[:31]]
     prompt = (
         "Turn someone's free time description into time slots.\n"
         f"Days in the plan: {', '.join(days)}\n"
@@ -48,10 +49,10 @@ def parse_availability(text: str, tz: str, start_day: str, end_day: str) -> list
     )
     data, _ = llm.chat_json([{"role": "user", "content": prompt}], temperature=0, max_tokens=900, operation="parse_availability")
     out = []
-    lo, hi = start_day, end_day
+    allowed = set(dates)
     for s in data.get("slots") or []:
         try:
-            if not (lo <= s["day"] <= hi):
+            if s["day"] not in allowed:
                 continue
             a, b = local_to_utc(s["day"], s["start"], tz), local_to_utc(s["day"], s["end"], tz)
             if b > a:
@@ -59,6 +60,18 @@ def parse_availability(text: str, tz: str, start_day: str, end_day: str) -> list
         except (KeyError, ValueError, TypeError):
             continue
     return out
+
+
+def plan_hours(plan: dict) -> float:
+    """Default length per kind, unless the planner gave an optional start and end time."""
+    locks = plan.get("locks") or {}
+    if locks.get("time") and locks.get("end_time"):
+        h1, m1 = (int(x) for x in locks["time"].split(":"))
+        h2, m2 = (int(x) for x in locks["end_time"].split(":"))
+        mins = (h2 * 60 + m2) - (h1 * 60 + m1)
+        if mins >= 30:
+            return mins / 60
+    return DURATION.get(plan["kind"], 2)
 
 
 # ---------- context ----------
@@ -72,7 +85,7 @@ def member_ctx(members: list[dict], plan: dict) -> list[dict]:
         picks = dict(m.get("picks") or {})
         if plan.get("decide") == "planner":
             picks = {**(plan.get("details") or {}), "car": picks.get("car"), "notes": picks.get("notes"),
-                     "can_host": picks.get("can_host")}
+                     "can_host": picks.get("can_host"), "best_day": picks.get("best_day")}
         out.append({"id": m["id"], "name": m["name"], "tz": m.get("tz") or "UTC", "picks": picks,
                     "lat": m.get("lat"), "lon": m.get("lon"), "city": m.get("city", ""),
                     "slots": [(parse_iso(s["start"]), parse_iso(s["end"])) for s in m.get("availability") or []]})
@@ -90,8 +103,10 @@ def _event_day(text: str, start_day: str) -> str | None:
 
 def gather(plan: dict, ms: list[dict]) -> dict:
     """Everything the planner prompt and the checker need."""
-    hours = DURATION.get(plan["kind"], 2)
-    windows = find_windows(ms, plan["start_day"], plan["end_day"], hours)
+    hours = plan_hours(plan)
+    preferred = Counter(m["picks"].get("best_day") for m in ms if m["picks"].get("best_day"))
+    windows = find_windows(ms, plan["start_day"], plan["end_day"], hours, days=set(plan.get("dates") or []) or None,
+                           day_tz=plan.get("tz") or "UTC", preferred=dict(preferred))
     pts = [(m["lat"], m["lon"]) for m in ms if m.get("lat") is not None]
     spread = max((places.km(a, b) for a in pts for b in pts), default=0)
     where = Counter((m["picks"].get("where") or "anywhere") for m in ms)

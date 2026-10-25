@@ -9,6 +9,19 @@ TEMPLATES = {
 }
 STARTED_PLAN_WEIGHT = 3
 
+# Before anyone knows the exact place, jobs depend on what kind of plan it is
+PLAN_TEMPLATES = {
+    "hangout": [("Pick and book the place", 3), ("Bring snacks or games", 2), ("Send everyone the details", 1), ("Send a reminder the day before", 1)],
+    "meal": [("Book the table", 3), ("Split the bill after", 2), ("Send the address and time", 1), ("Send a reminder the day before", 1)],
+    "date": [("Book the place", 3), ("Plan how to get there", 1)],
+    "call": [("Set up the call link", 2), ("Pick the game or show", 2), ("Send a reminder 1 hour before", 1)],
+    "trip": [("Book the stay", 3), ("Plan the transport", 3), ("Collect the money", 2), ("Make a packing list", 1)],
+}
+
+
+def tasks_for_plan(kind: str) -> list[tuple[str, int]]:
+    return PLAN_TEMPLATES.get(kind, PLAN_TEMPLATES["hangout"])
+
 
 def tasks_for(kind: str) -> list[tuple[str, int]]:
     return TEMPLATES.get(kind, TEMPLATES["place"])

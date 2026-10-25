@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Mascot from './Mascot'
 
 /* ---------- Button: primary / secondary / text. Same height, radius and padding everywhere. ---------- */
 
@@ -9,9 +10,9 @@ export function Button({ variant = 'primary', full, className = '', ...rest }: B
   const base =
     'inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--radius-card)] px-6 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50'
   const look = {
-    primary: 'bg-accent text-accent-ink hover:brightness-110',
-    secondary: 'border-2 border-line bg-surface text-ink hover:border-ink-soft',
-    text: 'px-3 text-accent hover:underline',
+    primary: 'border-2 border-ink bg-accent text-accent-ink shadow-[var(--shadow-card)] hover:brightness-110 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none',
+    secondary: 'border-2 border-ink bg-surface text-ink hover:bg-muted active:translate-x-[2px] active:translate-y-[2px]',
+    text: 'px-3 text-ink underline decoration-2 underline-offset-4 hover:text-accent',
   }[variant]
   return <button className={`${base} ${look} ${full ? 'w-full' : ''} ${className}`} {...rest} />
 }
@@ -23,8 +24,8 @@ export function Chip({ on, children, ...rest }: React.ButtonHTMLAttributes<HTMLB
     <button
       type="button"
       aria-pressed={on}
-      className={`min-h-12 rounded-full border-2 px-4 text-base font-medium transition-colors ${
-        on ? 'border-accent bg-accent-soft text-ink' : 'border-line bg-surface text-ink hover:border-ink-soft'
+      className={`min-h-12 border-2 px-4 text-base font-medium transition-colors ${
+        on ? 'border-ink bg-ink text-surface' : 'border-ink bg-surface text-ink hover:bg-muted'
       }`}
       {...rest}
     >
@@ -70,12 +71,12 @@ export function Tile({ on, title, sub, ...rest }: React.ButtonHTMLAttributes<HTM
     <button
       type="button"
       aria-pressed={on}
-      className={`flex min-h-16 w-full flex-col items-start justify-center rounded-[var(--radius-card)] border-2 px-4 py-3 text-left transition-colors ${
-        on ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:border-ink-soft'
+      className={`flex min-h-16 w-full flex-col items-start justify-center border-2 border-ink px-4 py-3 text-left transition-colors ${
+        on ? 'bg-accent-soft shadow-[var(--shadow-card)]' : 'bg-surface hover:bg-muted'
       }`}
       {...rest}
     >
-      <span className="text-base font-semibold">{title}</span>
+      <span className="display text-lg">{title}</span>
       {sub && <span className="text-sm text-ink-soft">{sub}</span>}
     </button>
   )
@@ -84,7 +85,7 @@ export function Tile({ on, title, sub, ...rest }: React.ButtonHTMLAttributes<HTM
 /* ---------- Card ---------- */
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-[var(--radius-card)] bg-surface p-4 shadow-[var(--shadow-card)] ${className}`}>{children}</div>
+  return <div className={`border-2 border-ink bg-surface p-4 ${className}`}>{children}</div>
 }
 
 /* ---------- Member avatar: color + initials, so color is never the only clue ---------- */
@@ -104,7 +105,7 @@ export function Avatar({ name, color, size = 40, dim }: { name: string; color: s
       title={name}
       aria-label={name}
       role="img"
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ring-2 ring-surface ${dim ? 'opacity-40' : ''}`}
+      className={`inline-flex shrink-0 items-center justify-center border-2 border-ink font-semibold ${dim ? 'opacity-40' : ''}`}
       style={{ width: size, height: size, background: color, color: textOn(color), fontSize: size < 36 ? 14 : 16 }}
     >
       {initials(name)}
@@ -114,7 +115,7 @@ export function Avatar({ name, color, size = 40, dim }: { name: string; color: s
 
 export function AvatarRow({ people, size = 32 }: { people: { name: string; color: string; dim?: boolean }[]; size?: number }) {
   return (
-    <span className="inline-flex -space-x-2">
+    <span className="inline-flex -space-x-1">
       {people.map((p, i) => (
         <Avatar key={i} {...p} size={size} />
       ))}
@@ -154,12 +155,12 @@ export function Help({ text }: { text: string }) {
         aria-label="What does this mean?"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-line text-sm text-ink-soft"
+        className="ml-1 inline-flex h-6 w-6 items-center justify-center border border-ink text-sm text-ink"
       >
         ?
       </button>
       {open && (
-        <span role="tooltip" className="absolute left-1/2 z-20 mt-2 block w-60 -translate-x-1/2 rounded-xl bg-ink p-3 text-sm font-normal text-white">
+        <span role="tooltip" className="absolute left-1/2 z-20 mt-2 block w-60 -translate-x-1/2 border-2 border-ink bg-surface p-3 text-sm font-normal normal-case tracking-normal text-ink shadow-[var(--shadow-card)]">
           {text}
         </span>
       )}
@@ -182,11 +183,11 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="rise max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-[var(--radius-card)] bg-surface p-6 sm:rounded-[var(--radius-card)]"
+        className="rise max-h-[90dvh] w-full max-w-lg overflow-y-auto border-2 border-ink bg-surface p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">{title}</h2>
+          <h2 className="display text-xl">{title}</h2>
           <Button variant="text" onClick={onClose}>Close</Button>
         </div>
         {children}
@@ -210,7 +211,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastCtx.Provider value={show}>
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 sm:bottom-8">
-        {msg && <div className="rise rounded-full bg-ink px-6 py-3 text-base text-white shadow-[var(--shadow-card)]">{msg}</div>}
+        {msg && <div className="rise border-2 border-ink bg-ink px-6 py-3 text-base text-surface">{msg}</div>}
       </div>
     </ToastCtx.Provider>
   )
@@ -252,7 +253,7 @@ export function Screen({ question, sub, children, primary, onPrimary, primaryDis
         {step && <span className="text-sm text-ink-soft">{step}</span>}
       </div>
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-bold">{question}</h1>
+        <h1 className="display text-2xl">{question}</h1>
         {sub && <p className="text-base text-ink-soft">{sub}</p>}
       </div>
       {children}
@@ -281,7 +282,7 @@ export function Working({ lines }: { lines: string[] }) {
   }, [lines.length])
   return (
     <div className="flex flex-col items-center gap-4 py-12 text-center" role="status">
-      <span className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-accent" aria-hidden="true" />
+      <Mascot mood="thinking" size={110} className="bob" />
       <p className="font-hand text-xl">{lines[i]}</p>
     </div>
   )
@@ -291,7 +292,7 @@ export function Working({ lines }: { lines: string[] }) {
 
 export function ErrorBox({ message, fix, onFix }: { message: string; fix?: string; onFix?: () => void }) {
   return (
-    <div role="alert" className="flex flex-col gap-3 rounded-[var(--radius-card)] bg-danger-soft p-4">
+    <div role="alert" className="flex flex-col gap-3 border-2 border-danger bg-danger-soft p-4">
       <p className="text-base text-ink">{message}</p>
       {fix && onFix && (
         <Button variant="secondary" onClick={onFix}>
@@ -305,7 +306,7 @@ export function ErrorBox({ message, fix, onFix }: { message: string; fix?: strin
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-base font-semibold">{label}</span>
+      <span className="label">{label}</span>
       {children}
       {hint && <span className="text-sm text-ink-soft">{hint}</span>}
     </label>
@@ -313,4 +314,4 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 
 export const inputCls =
-  'min-h-12 w-full rounded-[var(--radius-card)] border-2 border-line bg-surface px-4 text-base text-ink placeholder:text-ink-soft focus:border-accent focus:outline-none'
+  'min-h-12 w-full border-2 border-ink bg-surface px-4 text-base text-ink placeholder:text-ink-soft focus:border-accent focus:outline-none'

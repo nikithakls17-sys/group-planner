@@ -72,6 +72,8 @@ def _member_key(m: dict) -> str:
 
 
 def _answers_ready(plan: dict, members: list[dict]) -> bool:
+    if plan["status"] == "draft":
+        return False
     answered = [m for m in members if m["status"] == "answered"]
     if plan.get("answers_closed"):
         return len(answered) >= 1
@@ -98,7 +100,7 @@ def _stage(plan: dict) -> str:
     s = plan["status"]
     if s == "options":
         return "vote" if store().find("votes", plan_id=plan["id"]) else "options"
-    return {"answers": "answers", "locked": "tasks", "confirmed": "confirmed"}.get(s, s)
+    return {"answers": "answers", "draft": "answers", "locked": "tasks", "confirmed": "confirmed"}.get(s, s)
 
 
 def _public_member(m: dict, me: dict | None) -> dict:
@@ -114,7 +116,8 @@ def _view(plan: dict, me: dict | None) -> dict:
     members = _members(plan["id"])
     pub = {m["id"]: m["pub"] for m in members}
     chosen = next((o for o in plan.get("options") or [] if o["id"] == plan.get("chosen")), None)
-    task_list = [{**t, "assignee": pub.get(t["assignee"]), "mine": bool(me and t["assignee"] == me["id"])}
+    task_list = [{**t, "assignee": pub.get(t["assignee"]), "swap_to": pub.get(t.get("swap_to") or ""),
+                  "mine": bool(me and t["assignee"] == me["id"])}
                  for t in store().find("tasks", plan_id=plan["id"])]
     address = None
     if chosen and chosen["kind"] == "home" and me and me.get("confirm") == "yes":
@@ -130,7 +133,7 @@ def _view(plan: dict, me: dict | None) -> dict:
             for o in plan.get("options") or []]
     return {
         "id": plan["id"], "title": plan["title"], "kind": plan["kind"], "kind_other": plan.get("kind_other"),
-        "start_day": plan["start_day"], "end_day": plan["end_day"], "decide": plan["decide"],
+        "start_day": plan["start_day"], "end_day": plan["end_day"], "dates": plan.get("dates") or [], "decide": plan["decide"],
         "details": plan.get("details"), "locks": plan.get("locks") or {}, "work": plan["work"],
         "deadline": plan.get("deadline"), "status": plan["status"], "stage": _stage(plan),
         "planner": pub.get(plan["planner_id"]), "group_id": plan.get("group_id"),
@@ -153,10 +156,12 @@ class Person(BaseModel):
 
 
 class NewPlan(BaseModel):
-    kind: str
+    kind: str = "hangout"
     kind_other: str = ""
-    start_day: str
-    end_day: str
+    start_day: str = ""
+    end_day: str = ""
+    dates: list[str] = []
+    draft: bool = False  # the new flow creates the plan at step 1 so the group link works straight away
     when_label: str = ""
     decide: str = "everyone"  # everyone | planner
     details: dict | None = None
@@ -199,11 +204,13 @@ def create_plan(body: NewPlan):
         store().insert("groups", {"id": group_id, "name": body.save_group_as.strip()[:40], "created_by": body.planner.name,
                                   "members": [body.planner.model_dump()] + [p.model_dump() for p in body.people if p.name.strip()],
                                   "created_at": now_iso()})
-    plan = {"id": pid, "title": title, "kind": body.kind, "kind_other": body.kind_other, "start_day": body.start_day,
-            "end_day": body.end_day, "when_label": body.when_label, "decide": body.decide,
+    dates = sorted(set(body.dates))
+    plan = {"id": pid, "title": title, "kind": body.kind, "kind_other": body.kind_other,
+            "start_day": dates[0] if dates else body.start_day, "end_day": dates[-1] if dates else body.end_day,
+            "dates": dates, "when_label": body.when_label, "decide": body.decide,
             "details": body.details if body.decide == "planner" else None, "locks": body.locks or {}, "work": body.work,
-            "deadline": body.deadline, "status": "answers", "options": [], "tz": body.tz, "group_id": group_id,
-            "created_at": now_iso()}
+            "deadline": body.deadline, "status": "draft" if body.draft else "answers", "options": [], "tz": body.tz,
+            "group_id": group_id, "created_at": now_iso()}
     used: list[str] = []
     me = _new_member(pid, body.planner, used, is_planner=True, tz=body.tz, status="invited")
     plan["planner_id"] = me["id"]
@@ -265,6 +272,8 @@ class MemberUpdate(BaseModel):
     picks: dict | None = None
     status: str | None = None  # answered | declined
     host_address: str | None = None
+    lat: float | None = None
+    lon: float | None = None
 
 
 @app.patch("/api/plans/{pid}/me")
@@ -274,7 +283,9 @@ def update_me(pid: str, body: MemberUpdate, x_member: str | None = Header(None))
     fields = {k: v for k, v in body.model_dump().items() if v is not None}
     if "status" in fields and fields["status"] not in ("answered", "declined", "invited"):
         raise HTTPException(400, "bad status")
-    if "city" in fields and fields["city"] != me.get("city"):
+    if "lat" in fields and "lon" in fields:
+        pass  # detected in the browser; city is the label that came with it
+    elif "city" in fields and fields["city"] != me.get("city"):
         g = places.geocode(fields["city"]) if fields["city"].strip() else None
         fields.update({"lat": (g or {}).get("lat"), "lon": (g or {}).get("lon"), "city_found": (g or {}).get("name")})
     if "host_address" in fields:
@@ -292,7 +303,8 @@ class AvailText(BaseModel):
 async def parse_avail(pid: str, body: AvailText):
     plan = _plan(pid)
     try:
-        slots = await run_in_threadpool(planner.parse_availability, body.text, body.tz, plan["start_day"], plan["end_day"])
+        slots = await run_in_threadpool(planner.parse_availability, body.text, body.tz, plan["start_day"], plan["end_day"],
+                                        plan.get("dates") or None)
     except Exception:
         raise HTTPException(502, "We couldn't read that. Try tapping times instead.")
     return {"slots": slots}
@@ -419,8 +431,18 @@ def _lock(plan: dict, oid: str):
 
 
 def _make_tasks(plan: dict, opt: dict, people: list[dict]):
-    for t in store().find("tasks", plan_id=plan["id"]):
-        store().delete("tasks", t["id"])
+    start = parse_iso(opt["start"])
+    planned = store().find("tasks", plan_id=plan["id"])
+    if planned:
+        # The table people arranged while planning stays as it is; only due dates and a host are added
+        for t in planned:
+            due = start - (timedelta(days=1) if t["weight"] >= 3 else timedelta(hours=3))
+            store().update("tasks", t["id"], {"due": due.isoformat()})
+        if opt["kind"] == "home" and opt.get("host_id"):
+            store().insert("tasks", {"id": token(), "plan_id": plan["id"], "title": "Host", "weight": 3, "assignee": opt["host_id"],
+                                     "due": start.isoformat(), "done": False, "swap_open": False, "swap_since": None,
+                                     "swap_to": None, "created_at": now_iso()})
+        return
     todo = tasks.tasks_for(opt["kind"])
     if opt["kind"] == "home" and opt.get("host_id"):
         host = opt["host_id"]
@@ -472,9 +494,15 @@ def task_action(pid: str, tid: str, action: str, x_member: str | None = Header(N
     elif action == "take":
         if not t["swap_open"] or t["assignee"] == me["id"]:
             raise HTTPException(400, "This task isn't up for swapping.")
-        store().update("tasks", tid, {"assignee": me["id"], "swap_open": False, "swap_since": None})
+        if t.get("swap_to") and t["swap_to"] != me["id"]:
+            raise HTTPException(400, "This swap was offered to someone else.")
+        store().update("tasks", tid, {"assignee": me["id"], "swap_open": False, "swap_since": None, "swap_to": None})
     elif action == "reassign":
         _reassign(plan, t)
+    elif action == "decline":
+        if t.get("swap_to") != me["id"]:
+            raise HTTPException(400, "Nobody asked you to swap this.")
+        store().update("tasks", tid, {"swap_open": False, "swap_since": None, "swap_to": None})
     else:
         raise HTTPException(404, "unknown action")
     return _view(_plan(pid), me)
@@ -583,6 +611,99 @@ def _record_history(plan: dict):
                                             "plan_id": plan["id"], "task": t["title"], "weight": t["weight"], "created_at": now_iso()})
     store().insert("task_history", {"id": token(), "group_key": _history_key(plan), "member_key": "", "plan_id": plan["id"],
                                     "task": "__recorded__", "weight": 0, "created_at": now_iso()})
+
+
+# ---------- the step-by-step planner flow edits a draft plan ----------
+
+class PlanUpdate(BaseModel):
+    kind: str | None = None
+    kind_other: str | None = None
+    dates: list[str] | None = None
+    decide: str | None = None
+    details: dict | None = None
+    locks: dict | None = None
+    work: str | None = None
+    deadline: str | None = None
+    send: bool = False  # last step: invite sent, answers open
+
+
+@app.patch("/api/plans/{pid}")
+def update_plan(pid: str, body: PlanUpdate, x_member: str | None = Header(None)):
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    if plan["status"] not in ("draft", "answers"):
+        raise HTTPException(400, "This plan is past the planning stage.")
+    fields = {k: v for k, v in body.model_dump().items() if v is not None and k != "send"}
+    if "kind" in fields or "kind_other" in fields:
+        kind = fields.get("kind", plan["kind"])
+        other = fields.get("kind_other", plan.get("kind_other", "")).strip()
+        fields["title"] = other if kind == "other" and other else KIND_TITLES.get(kind, "a plan")
+    if "dates" in fields:
+        ds = sorted(set(fields["dates"]))
+        fields["dates"] = ds
+        if ds:
+            fields["start_day"], fields["end_day"] = ds[0], ds[-1]
+    if body.decide == "everyone":
+        fields["details"] = None
+    if body.send:
+        if not (fields.get("dates") or plan.get("dates") or plan.get("start_day")):
+            raise HTTPException(400, "Pick at least one possible date first.")
+        fields["status"] = "answers"
+    store().update("plans", pid, fields)
+    return _view(_plan(pid), _me(pid, x_member))
+
+
+@app.post("/api/plans/{pid}/plan-tasks")
+def plan_tasks(pid: str, x_member: str | None = Header(None)):
+    """The task table shown while planning: jobs for this kind of plan, split fairly (or all to the planner)."""
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    for t in store().find("tasks", plan_id=pid):
+        store().delete("tasks", t["id"])
+    people = [m for m in _members(pid) if m["status"] != "declined"]
+    todo = tasks.tasks_for_plan(plan["kind"])
+    if plan["work"] == "solo" or len(people) < 2:
+        owners = [plan["planner_id"]] * len(todo)
+    else:
+        history = store().find("task_history", group_key=_history_key(plan))
+        by_key = {_member_key(m): m["id"] for m in people}
+        owners = [by_key[k] for k in tasks.assign(todo, list(by_key), history)]
+    for (title, weight), owner in zip(todo, owners):
+        store().insert("tasks", {"id": token(), "plan_id": pid, "title": title, "weight": weight, "assignee": owner,
+                                 "due": None, "done": False, "swap_open": False, "swap_since": None, "swap_to": None,
+                                 "created_at": now_iso()})
+    return _view(_plan(pid), _me(pid, x_member))
+
+
+class Move(BaseModel):
+    to: str  # pub id of the new owner
+
+
+@app.post("/api/plans/{pid}/task-move/{tid}")
+def move_task(pid: str, tid: str, body: Move, x_member: str | None = Header(None)):
+    """Drag and drop in the task table. The planner can move anything; others ask with 'Can we swap?'."""
+    plan = _plan(pid)
+    _need_planner(plan, x_member)
+    t = _task(pid, tid)
+    target = next((m for m in _members(pid) if m["pub"] == body.to), None)
+    if not target:
+        raise HTTPException(400, "That person isn't in this plan.")
+    store().update("tasks", t["id"], {"assignee": target["id"], "swap_open": False, "swap_since": None, "swap_to": None})
+    return _view(_plan(pid), _me(pid, x_member))
+
+
+@app.post("/api/plans/{pid}/task-ask/{tid}")
+def ask_swap(pid: str, tid: str, body: Move, x_member: str | None = Header(None)):
+    """'Can we swap?': ask one person to take your task."""
+    me = _need_me(pid, x_member)
+    t = _task(pid, tid)
+    if t["assignee"] != me["id"]:
+        raise HTTPException(403, "You can only ask about your own tasks.")
+    target = next((m for m in _members(pid) if m["pub"] == body.to), None)
+    if not target or target["id"] == me["id"]:
+        raise HTTPException(400, "Pick someone else to ask.")
+    store().update("tasks", tid, {"swap_open": True, "swap_since": now_iso(), "swap_to": target["id"]})
+    return _view(_plan(pid), me)
 
 
 # ---------- calendar ----------

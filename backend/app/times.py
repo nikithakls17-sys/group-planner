@@ -49,9 +49,12 @@ def _comfort(tz: str, start: datetime, hours: float) -> float:
 
 
 def find_windows(members: list[dict], start_day: str, end_day: str, hours: float, *,
-                 now: datetime | None = None, limit: int = 3) -> list[dict]:
+                 now: datetime | None = None, limit: int = 3, days: set[str] | None = None,
+                 day_tz: str = "UTC", preferred: dict[str, int] | None = None) -> list[dict]:
     """members: [{"id", "tz", "slots": [(start, end), ...]}]. Returns the best `limit` windows,
-    most people free first, then the most comfortable local times for everyone."""
+    most people free first, then the day most people said suits them best, then the most comfortable
+    local times for everyone. `days` limits windows to the planner's picked dates (in `day_tz`)."""
+    preferred = preferred or {}
     if not members:
         return []
     now = now or datetime.now(timezone.utc)
@@ -64,14 +67,18 @@ def find_windows(members: list[dict], start_day: str, end_day: str, hours: float
     cands = []
     t = lo
     while t + dur <= hi:
+        day = t.astimezone(ZoneInfo(day_tz)).date().isoformat()
+        if days and day not in days:
+            t += STEP
+            continue
         free = [m for m in members if is_free(m["slots"], t, t + dur) and local_ok(m["tz"], t, t + dur)]
         if free:
             discomfort = sum(_comfort(m["tz"], t, hours) for m in free)
-            cands.append((-len(free), discomfort, t, [m["id"] for m in free]))
+            cands.append((-len(free), -preferred.get(day, 0), discomfort, t, [m["id"] for m in free]))
         t += STEP
-    cands.sort(key=lambda c: (c[0], c[1], c[2]))
+    cands.sort(key=lambda c: c[:4])
     picked = []
-    for _, disc, s, ids in cands:
+    for _, _, disc, s, ids in cands:
         if any(abs((s - p["_start"]).total_seconds()) < hours * 3600 for p in picked):
             continue  # keep windows from overlapping
         picked.append({"_start": s, "start": iso(s), "end": iso(s + dur), "free": ids,
