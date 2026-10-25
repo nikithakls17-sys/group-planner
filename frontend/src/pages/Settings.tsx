@@ -4,13 +4,13 @@ import { local } from '../api'
 import { Avatar, Button, ChipGroup, Field, inputCls, Sheet, useToast } from '../components/ui'
 import { APP_NAME, MEMBER_COLORS } from '../config'
 
-export type Settings = { theme: 'system' | 'light' | 'dark'; size: 'normal' | 'large'; motion: 'normal' | 'reduce'; color: string }
+export type Settings = { theme: 'system' | 'light' | 'dark'; size: 'normal' | 'large'; motion: 'device' | 'always' | 'reduce'; color: string }
 
 export function readSettings(): Settings {
   try {
-    return { theme: 'system', size: 'normal', motion: 'normal', color: MEMBER_COLORS[2].hex, ...JSON.parse(localStorage.getItem('np.settings') || '{}') }
+    return { theme: 'system', size: 'normal', motion: 'device', color: MEMBER_COLORS[2].hex, ...JSON.parse(localStorage.getItem('np.settings') || '{}') }
   } catch {
-    return { theme: 'system', size: 'normal', motion: 'normal', color: MEMBER_COLORS[2].hex }
+    return { theme: 'system', size: 'normal', motion: 'device', color: MEMBER_COLORS[2].hex }
   }
 }
 
@@ -19,7 +19,8 @@ export function applySettings(s: Settings) {
   if (s.theme === 'system') delete d.dataset.theme
   else d.dataset.theme = s.theme
   d.dataset.size = s.size
-  d.dataset.motion = s.motion
+  if (s.motion === 'device' || (s.motion as string) === 'normal') delete d.dataset.motion
+  else d.dataset.motion = s.motion
 }
 
 export default function SettingsPage() {
@@ -46,7 +47,7 @@ export default function SettingsPage() {
             value={s.size} onChange={(v: string) => set({ size: v as Settings['size'] })} />
         </Field>
         <Field label="Motion">
-          <ChipGroup label="Motion" options={[{ value: 'normal', label: 'Normal' }, { value: 'reduce', label: 'Reduce motion' }]}
+          <ChipGroup label="Motion" options={[{ value: 'device', label: 'Match my device' }, { value: 'always', label: 'Always flip pages' }, { value: 'reduce', label: 'Reduce motion' }]}
             value={s.motion} onChange={(v: string) => set({ motion: v as Settings['motion'] })} />
         </Field>
       </section>

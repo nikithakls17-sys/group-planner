@@ -43,6 +43,8 @@
   }
 }
 :root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after { animation: none !important; transition: none !important; }
+/* "Always animate" in Settings overrides the device setting */
+:root[data-motion="always"] .leaf, :root[data-motion="always"] .leaf * { animation-duration: revert; }
 
 @theme inline {
   --color-desk: var(--desk);
@@ -115,7 +117,7 @@ body { -webkit-tap-highlight-color: transparent; }
 .label { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; color: var(--ink-soft); }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  :root:not([data-motion="always"]) *, :root:not([data-motion="always"]) *::before, :root:not([data-motion="always"]) *::after { animation: none !important; transition: none !important; }
 }
 
 /* page turn when switching tabs */
@@ -132,10 +134,10 @@ body { -webkit-tap-highlight-color: transparent; }
 .leaf-face.paper { box-shadow: 0 0 30px rgba(59, 46, 12, 0.25); }
 .leaf-back { transform: rotateY(180deg); }
 .leaf-shade { position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.18), transparent 40%); }
-.leaf-forward { left: 50%; width: 50%; transform-origin: left center; animation: leaf-fwd 0.75s cubic-bezier(.45,.05,.35,1) forwards; }
-.leaf-back-dir { left: 0; width: 50%; transform-origin: right center; animation: leaf-bwd 0.75s cubic-bezier(.45,.05,.35,1) forwards; }
-.leaf-phone { left: 0; width: 100%; transform-origin: left center; animation: leaf-phone 0.6s cubic-bezier(.45,.05,.35,1) forwards; }
-.leaf-phone-back { left: 0; width: 100%; transform-origin: left center; animation: leaf-phone-back 0.6s cubic-bezier(.45,.05,.35,1) forwards; }
+.leaf-forward { left: 50%; width: 50%; transform-origin: left center; animation: leaf-fwd 0.9s cubic-bezier(.45,.05,.35,1) forwards; }
+.leaf-back-dir { left: 0; width: 50%; transform-origin: right center; animation: leaf-bwd 0.9s cubic-bezier(.45,.05,.35,1) forwards; }
+.leaf-phone { left: 0; width: 100%; transform-origin: left center; animation: leaf-phone 0.75s cubic-bezier(.45,.05,.35,1) forwards; }
+.leaf-phone-back { left: 0; width: 100%; transform-origin: left center; animation: leaf-phone-back 0.75s cubic-bezier(.45,.05,.35,1) forwards; }
 @keyframes leaf-fwd { from { transform: perspective(2200px) rotateY(0deg); } to { transform: perspective(2200px) rotateY(-180deg); } }
 @keyframes leaf-bwd { from { transform: perspective(2200px) rotateY(0deg); } to { transform: perspective(2200px) rotateY(180deg); } }
 @keyframes leaf-phone { 0% { transform: perspective(1400px) rotateY(0deg); opacity: 1; } 85% { opacity: 1; } 100% { transform: perspective(1400px) rotateY(-105deg); opacity: 0; } }

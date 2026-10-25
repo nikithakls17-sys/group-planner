@@ -241,3 +241,16 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   `votes` collection; the tally now ignores other choices.
 - Test with 5 real-shaped cafes: stairs-only, closed and far ones are dropped before Gemma; Gemma's invented place
   and duplicate are dropped by the checker; the 2 votes fix "Step Free Cafe"; both confirm. 22 tests pass.
+
+## Page turn, take 2 (Oct 26)
+
+- Niki couldn't see the page turn. Windows animation effects were on (checked with SPI_GETCLIENTAREAANIMATION), so
+  reduced motion wasn't the reason. Two real bugs: (1) Home, Plans, Groups, Settings and About each rendered their
+  own `<Book>`, so changing section unmounted the whole book and there was nothing to turn; now one layout route
+  keeps the book mounted. (2) The leaf was blank paper for 0.75 s, easy to miss.
+- Now it works like the Medium "flipping pages with CSS" approach: the leaf carries real content. Forward: the
+  right page lifts and turns over the spine; its front shows the page you were on, its back shows the new left page.
+  Back: the left page turns the other way. Phone: the page curls away from the left edge. 0.9 s, content is `inert`.
+  An `<Outlet/>` always renders the current route, so the app layout passes `useOutlet()` (a snapshot of that page)
+  instead, otherwise the leaf showed the new page on both sides.
+- Settings > Motion: Match my device / Always flip pages / Reduce motion.

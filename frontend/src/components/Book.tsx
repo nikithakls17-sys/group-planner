@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 export type BookTab = { key: string; label: string; color: { hex: string; deep: string }; disabled?: boolean; done?: boolean }
 
@@ -16,9 +16,21 @@ function Clip({ className = '' }: { className?: string }) {
   )
 }
 
+function reduceMotion() {
+  const m = document.documentElement.dataset.motion
+  if (m === 'reduce') return true
+  if (m === 'always') return false
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+type Leaf = { dir: 'fwd' | 'back'; n: number; front: ReactNode; back: ReactNode; phoneFront: ReactNode }
+const FLIP_MS = 900
+
 /** The whole app is a planner book on a desk. Laptop: open two-page spread, binder clip on the left edge, pastel
- *  tab dividers out of the right edge. Phone: one page, tabs as a strip along the top. */
-export default function Book({ tabs, active, onTab, headLeft, headRight, left, right, turnKey }: {
+ *  tab dividers out of the right edge. Phone: one page, tabs as a strip along the top.
+ *  Turning a page works like a real book: going forward, the right page lifts and turns over the spine (its front
+ *  is the page you were reading, its back is the new left page); going back, the left page turns the other way. */
+export default function Book({ tabs, active, onTab, headLeft, headRight, left, right }: {
   tabs: BookTab[]
   active: string
   onTab: (key: string) => void
@@ -29,33 +41,40 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
   turnKey?: string
 }) {
   const tab = tabs.find((t) => t.key === active)
-  // which way to turn: forward when the new tab is further along
-  const prev = useRef(active)
-  const [leaf, setLeaf] = useState<{ dir: 'fwd' | 'back'; n: number } | null>(null)
+  const last = useRef({ active, left, right })
+  const [leaf, setLeaf] = useState<Leaf | null>(null)
+
+  useLayoutEffect(() => {
+    const prev = last.current
+    if (prev.active !== active && !reduceMotion()) {
+      const order = tabs.map((t) => t.key)
+      const fwd = order.indexOf(active) >= order.indexOf(prev.active)
+      setLeaf({ dir: fwd ? 'fwd' : 'back', n: Date.now(), front: fwd ? prev.right : prev.left, back: fwd ? left : right, phoneFront: prev.left })
+    }
+    last.current = { active, left, right }
+  }, [active, left, right, tabs])
+
   useEffect(() => {
-    if (prev.current === active) return
-    const from = tabs.findIndex((t) => t.key === prev.current)
-    const to = tabs.findIndex((t) => t.key === active)
-    prev.current = active
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduce'
-    if (reduce) return
-    setLeaf({ dir: to >= from ? 'fwd' : 'back', n: Date.now() })
-    const t = window.setTimeout(() => setLeaf(null), 800)
+    if (!leaf) return
+    const t = window.setTimeout(() => setLeaf(null), FLIP_MS + 50)
     return () => window.clearTimeout(t)
-  }, [active, tabs])
+  }, [leaf])
+
+  const pagePad = 'px-5 pb-12 pt-5 md:px-12 md:pt-8'
   const leafEl = leaf && (
     <>
       <div key={`d${leaf.n}`} className={`leaf hidden md:block ${leaf.dir === 'fwd' ? 'leaf-forward' : 'leaf-back-dir'}`} aria-hidden="true">
-        <div className="leaf-face paper"><div className="leaf-shade" /></div>
-        <div className="leaf-face leaf-back paper"><div className="leaf-shade" style={{ transform: 'scaleX(-1)' }} /></div>
+        <div className={`leaf-face paper overflow-hidden ${pagePad}`} inert><div className="mt-14 flex flex-col gap-6">{leaf.front}</div><div className="leaf-shade" /></div>
+        <div className={`leaf-face leaf-back paper overflow-hidden ${pagePad}`} inert><div className="mt-14 flex flex-col gap-6">{leaf.back}</div><div className="leaf-shade" style={{ transform: 'scaleX(-1)' }} /></div>
       </div>
       <div key={`m${leaf.n}`} className={`leaf md:hidden ${leaf.dir === 'fwd' ? 'leaf-phone' : 'leaf-phone-back'}`} aria-hidden="true">
-        <div className="leaf-face paper"><div className="leaf-shade" /></div>
+        <div className={`leaf-face paper overflow-hidden ${pagePad}`} inert><div className="flex flex-col gap-6">{leaf.phoneFront}</div><div className="leaf-shade" /></div>
       </div>
     </>
   )
+
   return (
-    <div className="mx-auto w-full max-w-[1240px] px-0 py-0 md:px-14 md:py-8">
+    <div className="mx-auto w-full max-w-[1240px] md:px-14 md:py-8">
       {/* phone: clip + tab strip */}
       <div className="md:hidden">
         <div className="flex justify-center pt-2"><Clip className="h-10 w-20 rotate-90" /></div>
@@ -64,16 +83,14 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
             <button key={t.key} type="button" disabled={t.disabled} onClick={() => onTab(t.key)} aria-current={t.key === active ? 'page' : undefined}
               className={`on-pastel min-h-12 shrink-0 border-2 border-b-0 px-4 text-sm font-bold disabled:opacity-50 ${t.key === active ? 'border-ink pb-1' : 'border-transparent opacity-90'}`}
               style={{ background: t.color.hex }}>
-              {t.label}{t.done && t.key !== active ? <span className="sr-only"> (done)</span> : null}
+              {t.label}
             </button>
           ))}
         </nav>
       </div>
 
       <div className="relative">
-        {/* laptop: binder clip on the left edge */}
-        <Clip className="absolute -left-9 top-24 z-10 hidden h-28 w-16 md:block" />
-        {/* laptop: tab dividers out of the right edge */}
+        <Clip className="absolute -left-9 top-24 z-40 hidden h-28 w-16 md:block" />
         <nav aria-label="Pages" className="absolute -right-[92px] top-10 z-0 hidden w-[100px] flex-col gap-1.5 md:flex">
           {tabs.map((t) => (
             <button key={t.key} type="button" disabled={t.disabled} onClick={() => onTab(t.key)} aria-current={t.key === active ? 'page' : undefined}
@@ -87,17 +104,14 @@ export default function Book({ tabs, active, onTab, headLeft, headRight, left, r
 
         <div className="relative z-[1] grid min-h-[calc(100dvh-4rem)] grid-cols-1 shadow-[var(--page-shadow)] md:grid-cols-2">
           {leafEl}
-          {/* left page: the current tab */}
-          <section className="paper relative flex min-w-0 flex-col px-5 pb-12 pt-5 md:px-12 md:pt-8" aria-label={tab?.label}>
+          <section className={`paper relative flex min-w-0 flex-col ${pagePad}`} aria-label={tab?.label}>
             <div className="mb-6 hidden items-center justify-between text-sm md:flex">
               <span className="font-semibold text-ink-soft">{headLeft}</span>
             </div>
-            <div key={turnKey ?? active} className="turn flex flex-col gap-6">{left}</div>
-            {/* spine */}
+            <div className="flex flex-col gap-6">{left}</div>
             <span className="pointer-events-none absolute inset-y-0 right-0 hidden w-10 bg-gradient-to-l from-black/10 to-transparent md:block" />
           </section>
-          {/* right page: live summary */}
-          <aside className="paper relative flex min-w-0 flex-col border-t-2 border-dashed border-rule px-5 pb-12 pt-5 md:border-t-0 md:px-12 md:pt-8" aria-label="Summary">
+          <aside className={`paper relative flex min-w-0 flex-col border-t-2 border-dashed border-rule md:border-t-0 ${pagePad}`} aria-label="Summary">
             <div className="mb-6 hidden items-center justify-end text-sm md:flex">
               <span className="font-semibold text-ink-soft">{headRight}</span>
             </div>
