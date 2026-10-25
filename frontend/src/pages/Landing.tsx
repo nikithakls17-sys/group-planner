@@ -7,7 +7,7 @@ export default function Landing() {
         everyone answers once, and the app does the rest.
       </p>
       <button className="rounded-2xl bg-accent px-5 py-4 text-lg font-bold text-white">Start a plan</button>
-      <button className="rounded-2xl bg-warm-soft px-5 py-4 text-lg font-bold text-ink">I'm bored</button>
+      <button className="rounded-2xl border-2 border-line bg-surface px-5 py-4 text-lg font-bold text-ink">I'm bored</button>
     </main>
   )
 }

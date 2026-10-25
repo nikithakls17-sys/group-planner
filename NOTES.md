@@ -71,3 +71,17 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
 - End-to-end API test with a fake Gemma: create, claim name, join, answers, close, generate (2 of 3 first-try options
   rejected: invented place + over budget; retry fills the gap), vote, lock, tasks, swap, confirm, .ics, group load,
   delete group really deletes the plan. 18 tests pass.
+
+## Design system (Oct 26)
+
+- Tokens in `frontend/src/index.css`: neutral background and grays, one accent (`#2b5fd9`) for primary buttons and
+  the progress tracker, type scale 14/16/20/28/36 only, one radius (16px), one shadow, spacing on Tailwind's
+  4/8/12/16/24/32 steps. Inter for everything, Caveat only for a few friendly highlights.
+- Member colors are Okabe-Ito (color-blind safe), always drawn as a circle with initials; text color on the avatar
+  is picked by luminance so yellow gets dark initials.
+- Shared components in `components/ui.tsx`: Button (primary/secondary/text, 48px min height), Chip/ChipGroup (any
+  "No preference" chip clears the others), Tile, Card, Avatar/AvatarRow, Progress tracker, Help "?" tooltip, bottom
+  Sheet, Toast, Screen (back arrow, one question, one primary button, a "what happens next" line), Working (loading
+  lines), ErrorBox, Field.
+- `APP_NAME` lives in `frontend/src/config.ts` and `backend/app/config.py`.
+- A long bash heredoc with JSX in it broke the shell ("unexpected EOF"); wrote those files directly instead.
