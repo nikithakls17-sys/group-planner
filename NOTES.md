@@ -43,3 +43,31 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   is only meaningful for people who name a neighbourhood.
 - Windows needs `tzdata` for `zoneinfo`.
 - Tests: 15 pass. One test was wrong at first (the "far" friend was 5.6 km away, under the 6 km no-car limit).
+
+## API, Gemma options, fair tasks (Oct 26)
+
+- `planner.py`: gathers candidates (SerpApi places for the top 2 moods near the group's midpoint + Google Events in
+  the first member's city, a curated list of 7 online activities, and "at X's home" for anyone who can host), then
+  asks Gemma for 3 options that must quote a candidate `ref` and a time window index. Every option goes through the
+  checker; failures are sent back once with the reasons named ("Made-up Cafe (p_fake): not in the search results"),
+  and anything failing twice is dropped. Every check is saved to a `checker_events` collection (for the eval table)
+  and every rejection becomes a Sentry issue tagged with the rule.
+- Online-only when people are more than 80 km apart or it's a call.
+- Weather (Open-Meteo, no key) is added only to outdoor-sounding place options.
+- Fair split (`tasks.py`): heaviest task first, each to whoever has the lowest running load (history + tasks given
+  out so far). Starting a plan counts as 3. Confirmed plans write their tasks into `task_history`, keyed by group.
+- Fairness sim, 10 plans, 5 people, worst case where person A starts every plan: loads A 30 (all from starting),
+  B-E 16/15/15/15. A gets zero tasks. My first test assumed all five would be within 3 of each other, which was wrong:
+  the fair outcome is that the person who always starts does nothing else.
+- Votes: an option locks when more than half of the people who answered say "I'm in"; the planner can lock early
+  (ties: most "I'm in", then most "Maybe"). Locking creates tasks and asks everyone "Still in?".
+- Drop-outs: their open tasks are reassigned straight away; the planner chooses "go ahead" or "find a new time"
+  (which sends everyone back to the times step and clears options, votes and tasks).
+- Swaps: nobody takes an offered task within 12 h (or 6 h before it's due) -> the app reassigns it.
+- Host address: stored only on the host, returned only to members who confirmed, only once the plan is locked.
+- Member links: the share link is the plan id (unguessable `token_urlsafe(12)`); each person gets a private member
+  id kept in their browser. Other people only see a short public id, name, color and status.
+- Not done: reminder/nudge emails need an email provider key.
+- End-to-end API test with a fake Gemma: create, claim name, join, answers, close, generate (2 of 3 first-try options
+  rejected: invented place + over budget; retry fills the gap), vote, lock, tasks, swap, confirm, .ics, group load,
+  delete group really deletes the plan. 18 tests pass.

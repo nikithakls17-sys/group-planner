@@ -11,6 +11,8 @@ def _env(name: str, default: str = "") -> str:
     return os.getenv(name, "").strip() or default
 
 
+APP_NAME = _env("APP_NAME", "Nobody Plans")  # not final: change it here (and frontend/src/config.ts)
+
 MODE = _env("MODE", "local")
 HOSTED = MODE == "hosted"
 
