@@ -15,4 +15,7 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
 - Render plan set to `free` to start.
 - Local Python is 3.14, but the Docker image uses 3.12, so the venv is 3.12 (`py -3.12`) to match.
 - Bug: first frontend build failed with `Cannot find module './index.css'`. Fix: add `src/vite-env.d.ts`.
-- Slow: `pip install` took over 5 minutes on first run.
+- Bug: the first venv was created inside `frontend/` (wrong working directory), so `pip install` could not find
+  `backend/requirements.txt` and installed nothing, and uvicorn failed with exit 127. Fix: recreate `.venv` at the
+  repo root with absolute paths. Backend `/api/health` returns 200 after that.
+- Port 5173 was taken by another local app, so Vite moved to 5174.
