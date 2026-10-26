@@ -46,8 +46,9 @@ def seed(confirm: bool):
     v = c.post(f"/plans/{pid}/places", headers=h).json()
     if confirm and v["places"]:
         first = v["places"][0]["id"]
-        for name in ids:
-            c.post(f"/plans/{pid}/place-vote", headers={"X-Member": ids[name]}, json={"ids": [first]})
+        for name in ids:  # the plan locks as soon as most people pick the same place
+            if c.post(f"/plans/{pid}/place-vote", headers={"X-Member": ids[name]}, json={"ids": [first]}).json()["status"] != "places":
+                break
         for name in ids:
             c.post(f"/plans/{pid}/confirm", headers={"X-Member": ids[name]}, json={"choice": "yes"})
     else:
