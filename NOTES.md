@@ -331,3 +331,8 @@ task help (booking links, phone, website, Gemma tips). The Wear/Rides/Map/Money 
   can't count mail we don't send.
 - Removed the empty "Illustration: hero" placeholder boxes on Home. There are no illustrations yet.
 - Tests: 25 pass (new: free-slot maths, signed state, connect + callback ok/fail with Auth0/Google mocked).
+- Bug (live): `/places` 500 `AttributeError: 'int' object has no attribute 'get'` when Gemma returned bare refs in
+  `places` instead of objects. Fix: normalise each pick to `{"ref": ...}`; the checker still judges it.
+- `eval/screenshots.py` now runs against the live site by default (`SHOT_BASE` for local) and stops with the failing
+  call, status and body instead of a bare JSONDecodeError (the earlier crash was this same 500, plus the local server
+  being stopped for low memory).

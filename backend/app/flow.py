@@ -131,6 +131,8 @@ def build_places(plan: dict, members: list[dict]) -> dict:
             data, _ = llm.chat_json([{"role": "user", "content": _prompt(plan, ms, t, pool, need, limit, feedback)}],
                                     temperature=0.4, max_tokens=1400, operation="rank_places")
             picks = data.get("places") or []
+            # Gemma sometimes answers with bare refs instead of objects; keep them, the checker still decides
+            picks = [p if isinstance(p, dict) else {"ref": str(p)} for p in (picks if isinstance(picks, list) else [])]
         except Exception as e:  # model down: fall back to rating order, cost from Google's price level
             out["llm_error"] = str(e)[:200]
             picks = [{"ref": c["ref"], "cost_per_person": places.price_floor(c) if c["kind"] == "place" else c.get("cost_floor", 0),
