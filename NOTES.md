@@ -304,8 +304,7 @@ Honest reading:
   floor.
 - Gemma never invented a place or a time when the refs and windows were listed for it, and never picked a place
   without step-free access when someone needed it (27 options in step-free groups), so those rules caught nothing
-  here. They still matter: the app shows them only what passed a code filter, and earlier runs did see invented refs
-  in the fake-Gemma tests.
+  here. This run gives no evidence either way about how often Gemma would break them; the rules stay as guards.
 - Limits: 20 groups / 60 options is small; places are synthetic; the answer key and checker share the same rule
   definitions (by design), so this measures whether the checker applies them correctly, including parsing Google's
   hours and accessibility text.
