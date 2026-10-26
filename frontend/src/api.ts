@@ -114,6 +114,7 @@ export type Plan = {
   tallies?: { activities: { name: string; pubs: string[] }[]; duration?: string | null; distance?: string | null }
   lowest_budget?: number | null
   access_note?: string | null
+  effort?: { people: number; questions: number; nudges: number; places_checked: number; tasks: number; task_people: number } | null
 }
 
 export type Group = { id: string; name: string; members: { name: string; color: string; email: string; load: number }[]; plans: { id: string; title: string; stage: string; created_at: string }[] }

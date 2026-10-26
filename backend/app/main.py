@@ -136,6 +136,35 @@ def _access_note(plan: dict, me: dict | None, members: list[dict]) -> str | None
     return f"{n} guest{'s' if n != 1 else ''} need{'s' if n == 1 else ''} step-free access." if n else None
 
 
+ANSWER_FIELDS = ("budget", "activities", "distance", "duration", "car", "can_host", "access", "best_day")
+
+
+def answered_questions(m: dict) -> int:
+    """How many questions this person actually answered (not defaults we never showed them)."""
+    picks = m.get("picks") or {}
+    n = 1 if m.get("name") else 0
+    n += 1 if m.get("availability") else 0
+    n += 1 if m.get("city") or m.get("lat") is not None else 0
+    n += sum(1 for k in ANSWER_FIELDS if picks.get(k) not in (None, "", [], False))
+    return n
+
+
+def _effort(plan: dict, members: list[dict]) -> dict | None:
+    """'Effort saved', from real data. Only once the plan is fixed."""
+    if plan["status"] not in ("locked", "confirmed"):
+        return None
+    going = [m for m in members if m["status"] == "answered"]
+    tasks_ = store().find("tasks", plan_id=plan["id"])
+    return {
+        "people": len(going),
+        "questions": sum(answered_questions(m) for m in going),
+        "nudges": plan.get("nudges_sent", 0),
+        "places_checked": plan.get("places_checked", plan.get("searched", 0)),
+        "tasks": len(tasks_),
+        "task_people": len({t["assignee"] for t in tasks_}),
+    }
+
+
 def _view(plan: dict, me: dict | None) -> dict:
     members = _members(plan["id"])
     pub = {m["id"]: m["pub"] for m in members}
@@ -173,6 +202,7 @@ def _view(plan: dict, me: dict | None) -> dict:
                    for pl in plan.get("places") or []],
         "place_votes": flow.place_tally(plan, members), "tallies": flow.tallies([dict(m) for m in members]),
         "lowest_budget": _lowest_budget(plan, members), "access_note": _access_note(plan, me, members),
+        "effort": _effort(plan, members),
     }
 
 
@@ -844,6 +874,7 @@ async def build_places(pid: str, x_member: str | None = Header(None)):
             raise HTTPException(400, "Still waiting on answers.")
         res = await run_in_threadpool(flow.build_places, plan, _members(pid))
         fields = {"places": res["places"], "windows": res["windows"], "problem": res["problem"], "searched": res["searched"],
+                  "places_checked": res.get("checked", res["searched"]),
                   "checker_summary": {"raw": len(res["places"]) + len([r for r in res["rejected"] if r["stage"] != "code"]),
                                       "passed": len(res["places"]), "rejected": len(res["rejected"]),
                                       "rules": sorted({f["rule"] for r in res["rejected"] for f in r["fails"]}),

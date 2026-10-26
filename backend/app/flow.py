@@ -84,6 +84,7 @@ def build_places(plan: dict, members: list[dict]) -> dict:
     if not cands:
         out["problem"] = "no_places"
         return out
+    out["checked"] = len(cands)  # every place looked at, for "Effort saved"
 
     min_free = len(windows[0]["free"])
     ctx = {"members": ms, "candidates": cands, "min_free": min_free, "start_day": plan["start_day"], "end_day": plan["end_day"],

@@ -598,6 +598,7 @@ function Stamped({ plan, chosen, byPub, busy, run, call, setTab }: { plan: Plan;
           {confirmed ? 'Confirmed' : 'Picked'}
         </span>
       </div>
+      {plan.effort && <EffortSaved e={plan.effort} />}
       {chosen.kind === 'home' && <p className="text-base">{plan.host_address ? <>Address: <b>{plan.host_address}</b></> : me?.confirm === 'yes' ? `${chosen.host} hasn't added the address yet.` : 'The address shows here once you confirm.'}</p>}
       <div className="grid grid-cols-2 gap-2">
         <a className="inline-flex min-h-12 items-center justify-center bg-accent px-4 font-semibold text-accent-ink" href={`/api/plans/${plan.id}/invite.ics?m=${encodeURIComponent(me?.id ?? '')}`}>Add to calendar</a>
@@ -617,6 +618,23 @@ function Stamped({ plan, chosen, byPub, busy, run, call, setTab }: { plan: Plan;
           </div>
         </details>
       )}
+    </div>
+  )
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+/** "Effort saved", from real numbers on this plan. */
+function EffortSaved({ e }: { e: NonNullable<Plan['effort']> }) {
+  return (
+    <div className="flex flex-col gap-1 border-2 border-dashed border-accent bg-accent-soft p-4">
+      <span className="label">Effort saved</span>
+      <p className="text-base">
+        <b>{plural(e.people, 'person', 'people')}</b> answered <b>{plural(e.questions, 'question')}</b> between them
+        {e.people ? ` (about ${Math.round(e.questions / e.people)} each)` : ''}, <b>{plural(e.nudges, 'nudge')}</b> sent,{' '}
+        <b>{plural(e.places_checked, 'place')}</b> checked, <b>{plural(e.tasks, 'task')}</b> split across {plural(e.task_people, 'person', 'people')}.
+      </p>
+      <p className="font-hand text-xl">Nobody had to be the planner.</p>
     </div>
   )
 }
