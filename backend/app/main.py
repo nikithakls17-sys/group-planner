@@ -2,14 +2,14 @@ import secrets
 import threading
 from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import calendar, config, flow, llm, places, planner, tasks
-from .observability import init_sentry
+from .observability import init_sentry, report_issue
 from .store import now_iso, store
 from .times import parse_iso
 from zoneinfo import ZoneInfo
@@ -115,7 +115,9 @@ def _public_member(m: dict, me: dict | None) -> dict:
            "city": m.get("city", ""), "confirm": m.get("confirm"), "is_planner": m.get("is_planner", False),
            "has_answers": bool(m.get("availability")), "free_days": _free_days(m)}
     if me and me["id"] == m["id"]:
-        out.update({k: m.get(k) for k in ("id", "email", "availability", "standing", "picks", "host_address", "avail_text")})
+        out.update({k: m.get(k) for k in ("id", "email", "availability", "standing", "picks", "host_address", "avail_text", "cal_slots")})
+    elif me and me.get("is_planner") and m.get("email"):
+        out["email"] = m["email"]  # only the planner sees emails, for the Nudge button
     return out
 
 
@@ -158,7 +160,6 @@ def _effort(plan: dict, members: list[dict]) -> dict | None:
     return {
         "people": len(going),
         "questions": sum(answered_questions(m) for m in going),
-        "nudges": plan.get("nudges_sent", 0),
         "places_checked": plan.get("places_checked", plan.get("searched", 0)),
         "tasks": len(tasks_),
         "task_people": len({t["assignee"] for t in tasks_}),
@@ -335,6 +336,7 @@ class MemberUpdate(BaseModel):
     host_address: str | None = None
     lat: float | None = None
     lon: float | None = None
+    cal_slots: list[dict] | None = None
 
 
 @app.patch("/api/plans/{pid}/me")
@@ -351,6 +353,8 @@ def update_me(pid: str, body: MemberUpdate, x_member: str | None = Header(None))
         fields.update({"lat": (g or {}).get("lat"), "lon": (g or {}).get("lon"), "city_found": (g or {}).get("name")})
     if "host_address" in fields:
         fields["host_address"] = fields["host_address"][:200]
+    if "availability" in fields:
+        fields["cal_slots"] = None  # calendar free times are checked and saved now
     store().update("members", me["id"], fields)
     return _view(plan, store().get("members", me["id"]))
 
@@ -946,6 +950,65 @@ def _fix_place(plan: dict, place_id: str):
 
 
 # ---------- calendar ----------
+
+def _origin(request: Request) -> str:
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
+    return f"{proto}://{request.headers.get('host', request.url.netloc)}"
+
+
+def _cal_days(plan: dict, me: dict) -> list[str]:
+    if plan.get("dates"):
+        return plan["dates"]
+    tz = ZoneInfo(me.get("tz") or plan.get("tz") or "UTC")
+    today = datetime.now(tz).date()
+    if plan.get("start_day") and plan.get("end_day") and not me.get("is_planner"):
+        a, b = datetime.fromisoformat(plan["start_day"]).date(), datetime.fromisoformat(plan["end_day"]).date()
+        a = max(a, today)
+    else:
+        a, b = today, today + timedelta(days=20)
+    return [(a + timedelta(days=i)).isoformat() for i in range((b - a).days + 1)][:62]
+
+
+@app.get("/api/calendar/connect")
+def calendar_connect(request: Request, plan: str, m: str, back: str = "/"):
+    p = _plan(plan)
+    _need_me(p["id"], m)
+    back = back if back.startswith("/") and not back.startswith("//") else "/"
+    if not calendar.ready():
+        return RedirectResponse(_with(back, "cal=fail"), 303)
+    state = calendar.make_state(p=p["id"], m=m, b=back)
+    return RedirectResponse(calendar.authorize_url(f"{_origin(request)}/api/calendar/callback", state), 303)
+
+
+def _with(path: str, q: str) -> str:
+    return f"{path}{'&' if '?' in path else '?'}{q}"
+
+
+@app.get("/api/calendar/callback")
+def calendar_callback(request: Request, state: str = "", code: str = "", error: str = "", error_description: str = ""):
+    st = calendar.read_state(state) if state else None
+    if not st:
+        return RedirectResponse("/?cal=fail", 303)
+    back = st["b"]
+    if error or not code:
+        report_issue(f"calendar connect: {error} {error_description}"[:200], level="info", tool="google_calendar")
+        return RedirectResponse(_with(back, "cal=fail"), 303)
+    plan, me = _plan(st["p"]), _me(st["p"], st["m"])
+    if not me:
+        return RedirectResponse(_with(back, "cal=fail"), 303)
+    try:
+        g, refresh = calendar.google_token(code, f"{_origin(request)}/api/calendar/callback")
+        days = _cal_days(plan, me)
+        tz = me.get("tz") or plan.get("tz") or "UTC"
+        start, end = calendar.day_range(days, tz)
+        busy = calendar.busy(g, start, end)
+        calendar.revoke(refresh)
+        slots = calendar.free_slots(days, tz, busy, now=datetime.now(timezone.utc))
+    except Exception as e:  # any failure -> friendly fallback to tap or type
+        report_issue(f"calendar connect failed: {e}"[:300], level="warning", tool="google_calendar")
+        return RedirectResponse(_with(back, "cal=fail"), 303)
+    store().update("members", me["id"], {"cal_slots": slots})
+    return RedirectResponse(_with(back, "cal=ok"), 303)
 
 def _ics_text(s: str) -> str:
     return s.replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")

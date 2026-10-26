@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { addDays, api, fmtDay, fmtRange, fmtTime, KIND_LABEL, local, myTz, names, parseDay, planName, ymd, type Member, type Option, type Plan } from '../api'
+import { addDays, api, fmtClock, fmtDay, fmtRange, fmtTime, KIND_LABEL, local, myTz, names, parseDay, planName, ymd, type Member, type Option, type Plan } from '../api'
 import Book, { type BookTab } from '../components/Book'
 import Calendar from '../components/Calendar'
 import { useCalendarStatus } from '../components/FreeTimes'
@@ -8,7 +8,7 @@ import LocationLine, { type Loc } from '../components/Location'
 import { summary } from '../components/PicksForm'
 import Share from '../components/Share'
 import TaskBoard from '../components/TaskBoard'
-import { Avatar, AvatarRow, Button, ChipGroup, ErrorBox, Field, Help, inputCls, Note, PageHeading, Progress, SubHeading, Tile, useToast, Working } from '../components/ui'
+import { Avatar, AvatarRow, Button, Chip, ChipGroup, ErrorBox, Field, Help, inputCls, Note, PageHeading, Progress, SubHeading, Tile, useToast, Working } from '../components/ui'
 import { PASTELS, PLAN_TABS, type PlanTab } from '../config'
 import { ActivityPage, BudgetPage, PlacePicker, PlacesProblem, PlacesWorking, WherePage } from './FlowPages'
 import GoPage from './GoPage'
@@ -366,9 +366,76 @@ function DatesPage({ plan, me, isPlanner, busy, run, call, color, setTab }: Page
   const [times, setTimes] = useState<string[]>(initial.times)
   const [askTimes, setAskTimes] = useState(false)
   const calendar = useCalendarStatus()
+  const [params, setParams] = useSearchParams()
+  const calFailed = params.get('cal') === 'fail'
+  // free times found from Google Calendar or from typing, checked here before saving
+  const [found, setFound] = useState<{ start: string; end: string }[] | null>(me?.cal_slots?.length ? me.cal_slots : null)
+  const [foundFrom, setFoundFrom] = useState<'google' | 'type'>('google')
+  const [typing, setTyping] = useState(calFailed)
+  const [text, setText] = useState('')
+  const [reading, setReading] = useState(false)
+  const [readErr, setReadErr] = useState('')
+  useEffect(() => {
+    if (me?.cal_slots?.length) { setFound(me.cal_slots); setFoundFrom('google') }
+  }, [me?.cal_slots])
+  useEffect(() => {
+    if (params.get('cal') === 'ok' && me && !me.cal_slots?.length) setTyping(true)
+  }, [params, me])
   if (!plan || !me) return null
   const planDays = plan.dates.length ? plan.dates : []
   const allowed = isPlanner || !planDays.length ? undefined : (d: string) => planDays.includes(d)
+
+  async function saveFound() {
+    const slots = found ?? []
+    const ds = [...new Set(slots.map((s) => ymd(new Date(s.start))))].sort()
+    if (isPlanner) await call('', { dates: ds, send: true, deadline: plan!.deadline ?? defaultDeadline(ds[0]) }, 'PATCH')
+    await call('/me', { availability: slots, tz: myTz(), status: 'answered', ...(foundFrom === 'type' ? { avail_text: text } : {}) }, 'PATCH')
+    setFound(null)
+    if (params.get('cal')) { params.delete('cal'); setParams(params, { replace: true }) }
+    setTab('budget')
+  }
+
+  async function readText() {
+    setReading(true)
+    setReadErr('')
+    try {
+      const r = await api<{ slots: { start: string; end: string }[] }>(`/plans/${plan!.id}/parse-availability`, { body: { text, tz: myTz() }, member: me!.id ?? null })
+      if (r.slots.length) { setFound(r.slots); setFoundFrom('type') } else setReadErr("We couldn't find dates in that. Try 'Saturday after 2' or tap your dates below.")
+    } catch (e) {
+      setReadErr((e as Error).message)
+    } finally {
+      setReading(false)
+    }
+  }
+
+  if (found) {
+    const byDay = new Map<string, { start: string; end: string }[]>()
+    for (const s of found) byDay.set(ymd(new Date(s.start)), [...(byDay.get(ymd(new Date(s.start))) ?? []), s])
+    return (
+      <>
+        <PageHeading color={color} sub={foundFrom === 'google' ? 'From your Google Calendar, free/busy only. Tap a time to remove it.' : 'From what you typed. Tap a time to remove it.'}>
+          When are you free?
+        </PageHeading>
+        {found.length === 0 && <Note>Nothing left. Try again or pick dates instead.</Note>}
+        <ul className="flex flex-col">
+          {[...byDay.entries()].sort().map(([day, list]) => (
+            <li key={day} className="flex flex-col gap-2 border-b border-rule py-3 first:pt-0">
+              <span className="text-base font-semibold">{fmtDay(day)}</span>
+              <div className="flex flex-wrap gap-2">
+                {list.map((s) => (
+                  <Chip key={s.start} on onClick={() => setFound(found.filter((x) => x !== s))}>{fmtTime(s.start)} to {fmtClock(s.end)}</Chip>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={() => { setFound(null); if (foundFrom === 'google') run(() => call('/me', { cal_slots: [] }, 'PATCH')) }}>Pick dates instead</Button>
+          <Button disabled={busy || !found.length} onClick={() => run(saveFound, 'Saved')}>Looks right</Button>
+        </div>
+      </>
+    )
+  }
 
   async function save() {
     const slots = toSlots(dates, times)
@@ -391,8 +458,20 @@ function DatesPage({ plan, me, isPlanner, busy, run, call, color, setTab }: Page
           onClick={() => { window.location.href = `/api/calendar/connect?plan=${encodeURIComponent(plan.id)}&m=${encodeURIComponent(me.id ?? '')}&back=${encodeURIComponent(location.pathname + '?tab=dates')}` }}>
           Connect Google Calendar
         </Button>
-        <p className="text-sm text-ink-soft">{calendar ? 'Fills in your free dates and times from free/busy only. You check them before saving.' : 'Google Calendar is being set up. Pick your dates below for now.'}</p>
+        <p className="text-sm text-ink-soft">{calendar ? 'Fills in your free dates and times from free/busy only, never what your events are. You check them before saving.' : 'Google Calendar is being set up. Pick your dates below for now.'}</p>
       </div>
+      {calFailed && <Note>We couldn't read your Google Calendar this time. No problem: type when you're free, or tap your dates below.</Note>}
+      {typing ? (
+        <div className="flex flex-col gap-2">
+          <Field label="Type when you're free">
+            <textarea className={`${inputCls} min-h-24 py-3`} value={text} placeholder="Free after 6 on Saturday, all day Sunday" onChange={(e) => setText(e.target.value)} />
+          </Field>
+          <Button variant="secondary" disabled={!text.trim() || reading} onClick={readText}>{reading ? 'Reading...' : 'Read it'}</Button>
+          {readErr && <ErrorBox message={readErr} />}
+        </div>
+      ) : (
+        <Button variant="text" className="self-start" onClick={() => setTyping(true)}>Or type it</Button>
+      )}
       {!askTimes ? (
         <>
           <SubHeading>Or pick your free dates</SubHeading>
@@ -446,6 +525,7 @@ function PlansPage({ plan, me, isPlanner, busy, run, call, color, setTab }: Page
                 onBlur={(e) => e.target.value && run(() => call('', { deadline: new Date(e.target.value).toISOString() }, 'PATCH'), 'Deadline saved')} />
             </Field>
           )}
+          {isPlanner && waiting.length > 0 && <NudgeButton plan={plan} waiting={waiting} me={me} />}
           {isPlanner && waiting.length > 0 && answered.length >= 1 && (
             <Button variant="secondary" disabled={busy} onClick={() => run(() => call('/close-answers'))}>Don't wait, plan with who's answered</Button>
           )}
@@ -625,13 +705,37 @@ function Stamped({ plan, chosen, byPub, busy, run, call, setTab }: { plan: Plan;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** "Effort saved", from real numbers on this plan. */
+/** One tap: opens the planner's own email app with a ready message to everyone who hasn't answered. */
+function NudgeButton({ plan, waiting, me }: { plan: Plan; waiting: Member[]; me: Member | null }) {
+  const to = waiting.map((m) => m.email).filter(Boolean).join(',')
+  const link = `${location.origin}/p/${plan.id}?tab=who`
+  const title = planName(plan)
+  const dl = plan.deadline ? `
+
+Answers close ${fmtTime(plan.deadline)}.` : ''
+  const body = `Hi ${names(waiting.map((m) => m.name))}!
+
+We're planning ${title} and just need your answers. It takes about a minute: when you're free, your budget and what you'd like to do.
+
+${link}${dl}
+
+Thanks!
+${me?.name ?? ''}`
+  const href = `mailto:${to}?subject=${encodeURIComponent(`Quick answer for ${title}?`)}&body=${encodeURIComponent(body)}`
+  return (
+    <a href={href} className="inline-flex min-h-12 items-center justify-center border-2 border-ink bg-surface px-4 font-semibold">
+      Nudge {waiting.length === 1 ? waiting[0].name : `${waiting.length} people`}
+    </a>
+  )
+}
+
 function EffortSaved({ e }: { e: NonNullable<Plan['effort']> }) {
   return (
     <div className="flex flex-col gap-1 border-2 border-dashed border-accent bg-accent-soft p-4">
       <span className="label">Effort saved</span>
       <p className="text-base">
         <b>{plural(e.people, 'person', 'people')}</b> answered <b>{plural(e.questions, 'question')}</b> between them
-        {e.people ? ` (about ${Math.round(e.questions / e.people)} each)` : ''}, <b>{plural(e.nudges, 'nudge')}</b> sent,{' '}
+        {e.people ? ` (about ${Math.round(e.questions / e.people)} each)` : ''},{' '}
         <b>{plural(e.places_checked, 'place')}</b> checked, <b>{plural(e.tasks, 'task')}</b> split across {plural(e.task_people, 'person', 'people')}.
       </p>
       <p className="font-hand text-xl">Nobody had to be the planner.</p>

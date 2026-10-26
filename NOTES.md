@@ -314,3 +314,20 @@ Honest reading:
 Wear (dress code + outfit photos), Rides (how you're coming, ask for a ride, offer seats), Map (live location on the
 day), Money (receipts + bill splitting), Feelings and photos (people and pets) on the Who page, reminder emails,
 task help (booking links, phone, website, Gemma tips). The Wear/Rides/Map/Money tabs show "being built" for now.
+
+## Oct 26: Google Calendar via Auth0 Token Vault, one-tap Nudge
+
+- **Connect Google Calendar** (Dates page). `/api/calendar/connect` sends the person to Auth0 `/authorize` with
+  `connection=google-oauth2`, `connection_scope=calendar.freebusy` and `offline_access`, plus a signed state (plan, member,
+  return path, 15 min max age). `/api/calendar/callback` swaps the code for an Auth0 refresh token, then exchanges that
+  for a Google access token from Token Vault (`federated-connection-access-token` grant), calls Google `freeBusy` for the
+  plan's dates (or the next 3 weeks for a planner who hasn't picked dates yet), and revokes the refresh token.
+  Busy times → free gaps of an hour or more between 8:00 and 23:00 local. Only free times are saved (`cal_slots`), and
+  the person checks them ("Looks right") before they become their answer. No event titles are requested or stored.
+- Any failure redirects back with `cal=fail`: a friendly note, and the "type it" box opens, with tap-dates below.
+  Failures go to Sentry as issues tagged `tool=google_calendar`.
+- **Nudge** is now a mailto link: it opens the planner's own email app addressed to everyone who hasn't answered (emails
+  are shown only to the planner) with a ready message and the link. "Nudges sent" is gone from Effort saved, since we
+  can't count mail we don't send.
+- Removed the empty "Illustration: hero" placeholder boxes on Home. There are no illustrations yet.
+- Tests: 25 pass (new: free-slot maths, signed state, connect + callback ok/fail with Auth0/Google mocked).

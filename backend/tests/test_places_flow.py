@@ -76,5 +76,5 @@ def test_budget_activity_places_vote_fix_confirm(monkeypatch):
     assert v["status"] == "confirmed"
     e = v["effort"]
     # each answered: name, dates, location, activities, duration, distance, car (+ Ben's access need)
-    assert e == {"people": 2, "questions": 15, "nudges": 0, "places_checked": 5, "tasks": len(v["tasks"]),
+    assert e == {"people": 2, "questions": 15, "places_checked": 5, "tasks": len(v["tasks"]),
                  "task_people": len({t["assignee"] for t in v["tasks"]})}, e

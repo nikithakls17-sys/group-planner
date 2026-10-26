@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, fmtDay, local, planName, type Plan } from '../api'
-import { IllustrationSlot } from '../components/Illustration'
 import { AvatarRow, Button, Note, PageHeading, Progress } from '../components/ui'
 import { PASTELS } from '../config'
 
@@ -42,8 +41,6 @@ export default function Home() {
   return (
     <>
       <PageHeading color={PASTELS[0].deep} sub="Every group chat has one person who does all the planning. Not anymore.">Nobody plans</PageHeading>
-      {/* Space for the hero illustration. Swap for <img src="/illustrations/hero.png" alt="..."> when it arrives. */}
-      <IllustrationSlot name="hero" ratio="4 / 3" note="the group chat, a sleepy planner" />
       <div className="flex flex-col gap-3">
         <Button full onClick={() => nav('/new')}>Plan something</Button>
         <Button full variant="secondary" onClick={() => nav('/new?bored=1')}>I'm bored</Button>
@@ -64,8 +61,6 @@ export function HomeRight() {
       {plans === null && <Note>Looking for your plans...</Note>}
       {plans && upcoming.length === 0 && <p className="text-base text-ink-soft">Nothing planned yet. Tap Plan something and send one link to your group.</p>}
       {upcoming.map((p, i) => <PlanCard key={p.id} p={p} i={i} />)}
-      {/* Second illustration space */}
-      <IllustrationSlot name="how it works" ratio="3 / 1" note="link, answer, vote, done" />
     </>
   )
 }
