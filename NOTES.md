@@ -349,3 +349,8 @@ task help (booking links, phone, website, Gemma tips). The Wear/Rides/Map/Money 
   Health pings are no longer traced (`traces_sampler`), so Render's checks don't bury the Gemma traces.
 - Screenshots: 34 from the live site, including map close-ups (`16-map-place-card-*`, `17-map-confirmed-*`).
   The best ones are in the README.
+- Bug (reported): "the Online button isn't working". It did save `mode: online`, but nothing on the page changed: the
+  same in-person kinds stayed (Hangout, Meal, Date, Trip, plus "Call / online"), so it looked dead. Fix: each mode has
+  its own kinds. In person: Hangout, Meal, Date, Trip, Something else. Online: Catch-up call, Game night, Watch party,
+  Something else. Switching mode moves the plan to the first kind of the new mode and saves both. Online kinds get their
+  own job lists and titles.

@@ -247,7 +247,8 @@ class NewPlan(BaseModel):
     save_group_as: str = ""
 
 
-KIND_TITLES = {"hangout": "a hangout", "meal": "a meal", "date": "a date", "call": "a call", "trip": "a trip"}
+KIND_TITLES = {"hangout": "a hangout", "meal": "a meal", "date": "a date", "trip": "a trip",
+               "call": "a catch-up call", "games": "a game night", "watch": "a watch party"}
 # Same pastel set as the frontend (always shown with initials)
 COLORS = ["#FFD54F", "#FFB366", "#A3B454", "#FFE8A1", "#C9B6E4", "#9FCDE8", "#F29C8B", "#BFD3A0", "#EBA6B8", "#E3CFA6",
           "#A9B8EC", "#D9A58A", "#A8DCC4", "#C9C3BA"]

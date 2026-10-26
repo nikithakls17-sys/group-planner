@@ -253,7 +253,9 @@ export const KIND_LABEL: Record<string, string> = {
   hangout: 'Hangout',
   meal: 'Meal',
   date: 'Date',
-  call: 'Call / online',
+  call: 'Catch-up call',
+  games: 'Game night',
+  watch: 'Watch party',
   trip: 'Trip',
   other: 'Something else',
 }

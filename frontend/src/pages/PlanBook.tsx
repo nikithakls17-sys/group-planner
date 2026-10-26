@@ -16,10 +16,11 @@ import GoPage from './GoPage'
 import MoneyPage from './MoneyPage'
 import { APP_TABS } from '../config'
 
-const KINDS = ['hangout', 'meal', 'date', 'call', 'trip', 'other']
+const KINDS = { in_person: ['hangout', 'meal', 'date', 'trip', 'other'], online: ['call', 'games', 'watch', 'other'] }
 const KIND_SUB: Record<string, string> = {
   hangout: 'Coffee, a walk, whatever', meal: 'Lunch, dinner, brunch', date: 'Just the two of you',
-  call: 'Games, watch party, catch-up', trip: 'A day out or a weekend away', other: 'Tell us what',
+  call: 'Video or voice, just talk', games: 'Online games together', watch: 'A show or film, in sync',
+  trip: 'A day out or a weekend away', other: 'Tell us what',
 }
 const TIMES = [
   { value: 'morning', label: 'Morning', from: 9, to: 12 },
@@ -193,8 +194,8 @@ type PageProps = {
 function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps) {
   const nav = useNavigate()
   const [name, setName] = useState(local.name())
-  const [kind, setKind] = useState(plan?.kind ?? 'hangout')
-  const [mode, setMode] = useState<'in_person' | 'online'>(plan?.mode ?? 'in_person')
+  const [mode, setMode] = useState<'in_person' | 'online'>(plan?.mode ?? (plan && ['call', 'games', 'watch'].includes(plan.kind) ? 'online' : 'in_person'))
+  const [kind, setKind] = useState(plan?.kind ?? (mode === 'online' ? 'call' : 'hangout'))
   const [other, setOther] = useState(plan?.kind_other ?? '')
   const planner = plan?.members.find((m) => m.pub === plan.planner)
 
@@ -220,6 +221,15 @@ function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps
     setTab('who')
   }
 
+  // online and in person have different kinds of plan; switching keeps "something else", otherwise picks the first
+  function switchMode(m: 'in_person' | 'online') {
+    if (m === mode) return
+    const k = KINDS[m].includes(kind) ? kind : KINDS[m][0]
+    setMode(m)
+    setKind(k)
+    if (plan) run(() => call('', { mode: m, kind: k, kind_other: k === 'other' ? other : '' }, 'PATCH'))
+  }
+
   if (plan && !isPlanner) {
     return (
       <>
@@ -233,7 +243,7 @@ function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps
       <PageHeading color={color} sub="In person or online, then tap what it is.">What are we planning?</PageHeading>
       <div className="grid grid-cols-2 border-2 border-ink" role="radiogroup" aria-label="In person or online">
         {(['in_person', 'online'] as const).map((m) => (
-          <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => { setMode(m); if (plan) run(() => call('', { mode: m }, 'PATCH')) }}
+          <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => switchMode(m)}
             className={`min-h-14 text-base font-bold ${mode === m ? 'bg-ink text-bg' : 'bg-surface'}`}>
             {m === 'in_person' ? 'Meet in person' : 'Online'}
           </button>
@@ -245,7 +255,7 @@ function WhatPage({ plan, isPlanner, busy, run, call, setTab, color }: PageProps
         </Field>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {KINDS.map((k, i) => (
+        {KINDS[mode].map((k, i) => (
           <Tile key={k} title={KIND_LABEL[k]} sub={KIND_SUB[k]} on={kind === k} tint={PASTELS[i].hex} disabled={busy || (!plan && !name.trim())}
             onClick={() => run(() => choose(k))} />
         ))}

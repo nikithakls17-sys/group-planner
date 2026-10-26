@@ -15,6 +15,8 @@ PLAN_TEMPLATES = {
     "meal": [("Book the table", 3), ("Split the bill after", 2), ("Send the address and time", 1), ("Send a reminder the day before", 1)],
     "date": [("Book the place", 3), ("Plan how to get there", 1)],
     "call": [("Set up the call link", 2), ("Pick the game or show", 2), ("Send a reminder 1 hour before", 1)],
+    "games": [("Pick the game and share the link", 2), ("Set up the call", 2), ("Send a reminder 1 hour before", 1)],
+    "watch": [("Pick what to watch", 2), ("Set up the watch link", 2), ("Send a reminder 1 hour before", 1)],
     "trip": [("Book the stay", 3), ("Plan the transport", 3), ("Collect the money", 2), ("Make a packing list", 1)],
 }
 
