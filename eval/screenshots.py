@@ -36,12 +36,14 @@ def seed(confirm: bool):
         ids[name] = c.post(f"/plans/{pid}/join", json={"name": name, "tz": "Asia/Kolkata"}).json()["member_id"]
     c.patch(f"/plans/{pid}", headers=h, json={"dates": [DAY], "send": True})
     slot = {"start": f"{DAY}T02:30:00Z", "end": f"{DAY}T17:30:00Z"}
-    people = {"Niki": (["cafe", "park"], [], 12.97, 77.59, "#FFD54F"), "Sam": (["cafe"], ["step_free"], 12.93, 77.62, "#A3B454"),
-              "Priya": (["cafe", "games"], [], 12.99, 77.57, "#FFB366")}
+    # test friends spread across Bengaluru, so each one's city-level dot sits in its own area on the map
+    people = {"Niki": (["cafe", "park"], [], 12.93, 77.58, "#FFD54F"),     # Jayanagar
+              "Sam": (["cafe"], ["step_free"], 12.97, 77.75, "#A3B454"),   # Whitefield
+              "Priya": (["cafe", "games"], [], 13.04, 77.59, "#FFB366")}   # Hebbal
     for name, (acts, access, lat, lon, color) in people.items():
         c.patch(f"/plans/{pid}/me", headers={"X-Member": ids[name]}, json={
             "availability": [slot], "lat": lat, "lon": lon, "city": "Bengaluru", "status": "answered", "color": color,
-            "picks": {"activities": acts, "duration": "2h", "distance": "short", "car": "yes", "access": access}})
+            "picks": {"activities": acts, "duration": "2h", "distance": "hour", "car": "yes", "access": access}})
     c.post(f"/plans/{pid}/plan-tasks", headers=h)
     v = c.post(f"/plans/{pid}/places", headers=h).json()
     if confirm and v["places"]:

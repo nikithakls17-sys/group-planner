@@ -138,10 +138,13 @@ export async function api<T>(path: string, opts: { method?: string; body?: unkno
     throw new ApiError("We can't reach the server. Check your connection and try again.")
   }
   if (!r.ok) {
-    let msg = 'Something went wrong. Try again.'
+    // say what failed, so a screenshot of the message is enough to find the bug
+    const what = `${opts.method ?? (opts.body ? 'POST' : 'GET')} ${path.replace(/\/plans\/[^/]+/, '/plans/…')}`
+    let msg = `Something went wrong (error ${r.status} on ${what}). Try again.`
     try {
       const j = await r.json()
       if (typeof j.detail === 'string') msg = j.detail
+      else if (Array.isArray(j.detail) && j.detail[0]) msg = `That didn't save: ${j.detail[0].loc?.slice(-1)[0] ?? 'a field'} ${j.detail[0].msg ?? 'is not valid'} (${what}).`
     } catch { /* not json */ }
     throw new ApiError(msg)
   }

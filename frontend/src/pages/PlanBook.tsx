@@ -72,6 +72,7 @@ export default function PlanBook() {
   const raw = params.get('tab')
   const tab = ((raw === 'plans' ? 'places' : raw) as PlanTab) || (id ? (member ? 'places' : 'who') : 'what')
   const setTab = useCallback((t: string) => setParams((p) => { p.set('tab', t); return p }, { replace: false }), [setParams])
+  useEffect(() => setErr(''), [tab]) // an old error doesn't follow you to other pages
 
   const load = useCallback(async () => {
     if (!id) return

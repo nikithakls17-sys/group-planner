@@ -354,3 +354,11 @@ task help (booking links, phone, website, Gemma tips). The Wear/Rides/Map/Money 
   its own kinds. In person: Hangout, Meal, Date, Trip, Something else. Online: Catch-up call, Game night, Watch party,
   Something else. Switching mode moves the plan to the first kind of the new mode and saves both. Online kinds get their
   own job lists and titles.
+- Reported: "everything keeps saying something is wrong in the What section". I couldn't reproduce it on the live site
+  (new plans, switching an existing plan to online, online plans end to end) or in any of the 17 stored plans. Two
+  causes made it worse: (1) the error box stayed on screen when you moved to other pages, so one failure from
+  anywhere looked like a What-page error; (2) server crashes showed only "Something went wrong". Now errors clear
+  when you change pages, and the message names the failing call and status code (for example "error 500 on PATCH
+  /plans/…"), and validation errors name the field.
+- Screenshot test friends are now spread across Bengaluru (Jayanagar, Whitefield, Hebbal), so the map shows three
+  separate city-level dots.
