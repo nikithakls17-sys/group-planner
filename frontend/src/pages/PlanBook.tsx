@@ -4,6 +4,7 @@ import { addDays, api, fmtClock, fmtDay, fmtRange, fmtTime, KIND_LABEL, local, m
 import Book, { type BookTab } from '../components/Book'
 import Calendar from '../components/Calendar'
 import { useCalendarStatus } from '../components/FreeTimes'
+import MiniMap from '../components/MiniMap'
 import LocationLine, { type Loc } from '../components/Location'
 import { summary } from '../components/PicksForm'
 import Share from '../components/Share'
@@ -627,6 +628,7 @@ function Sticker({ o, i, byPub, children }: { o: Option; i: number; byPub: Recor
           <dt className="text-ink-soft">Cost</dt><dd className="font-bold">{o.cost_per_person ? `About $${o.cost_per_person} each` : 'Free'}</dd>
           {o.weather && <><dt className="text-ink-soft">Weather</dt><dd>{o.weather}</dd></>}
         </dl>
+        {o.kind !== 'online' && o.lat != null && o.lon != null && <MiniMap lat={o.lat} lon={o.lon} title={o.title} people={Object.values(byPub).filter((m) => m.status === 'answered')} />}
         {o.kind !== 'online' && <p className="text-sm">{(o as Option & { access?: string }).access === 'unconfirmed' ? 'Access not confirmed, call ahead.' : "Checked for everyone's access needs."}</p>}
         {o.distances && Object.keys(o.distances).length > 0 && (
           <div className="flex flex-wrap gap-3" aria-label="Distance for each person">

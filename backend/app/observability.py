@@ -12,7 +12,8 @@ def init_sentry() -> None:
     sentry_sdk.init(
         dsn=config.SENTRY_DSN,
         environment=config.SENTRY_ENVIRONMENT,
-        traces_sample_rate=1.0,
+        # every request is traced except Render's health pings, which would drown out the Gemma traces
+        traces_sampler=lambda ctx: 0.0 if "/api/health" in str((ctx.get("asgi_scope") or {}).get("path", "")) else 1.0,
         send_default_pii=False,
     )
     sentry_sdk.set_tag("mode", config.MODE)

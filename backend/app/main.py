@@ -23,7 +23,7 @@ _gen_lock = threading.Lock()
 @app.get("/api/health")
 def health():
     return {"ok": True, "app": config.APP_NAME, "calendar": calendar.ready(), "mode": config.MODE, "llm": config.LLM_PROVIDER, "model": llm.model_name(),
-            "store": type(store()).__name__, "serpapi": bool(config.SERPAPI_KEY)}
+            "store": type(store()).__name__, "serpapi": bool(config.SERPAPI_KEY), "sentry": bool(config.SENTRY_DSN)}
 
 
 def token() -> str:
@@ -110,10 +110,17 @@ def _free_days(m: dict) -> list[str]:
     return sorted({parse_iso(s["start"]).astimezone(tz).date().isoformat() for s in m.get("availability") or []})
 
 
+def _spot(m: dict) -> list[float] | None:
+    """City-level location for the map: rounded to 0.1 degree (about 10 km), never an exact address."""
+    if m.get("lat") is None or m.get("lon") is None:
+        return None
+    return [round(m["lat"], 1), round(m["lon"], 1)]
+
+
 def _public_member(m: dict, me: dict | None) -> dict:
     out = {"pub": m["pub"], "name": m["name"], "color": m["color"], "status": m["status"], "tz": m.get("tz"),
            "city": m.get("city", ""), "confirm": m.get("confirm"), "is_planner": m.get("is_planner", False),
-           "has_answers": bool(m.get("availability")), "free_days": _free_days(m)}
+           "has_answers": bool(m.get("availability")), "free_days": _free_days(m), "spot": _spot(m)}
     if me and me["id"] == m["id"]:
         out.update({k: m.get(k) for k in ("id", "email", "availability", "standing", "picks", "host_address", "avail_text", "cal_slots")})
     elif me and me.get("is_planner") and m.get("email"):
@@ -183,7 +190,12 @@ def _view(plan: dict, me: dict | None) -> dict:
         return {m["pub"]: round(places.km((m["lat"], m["lon"]), (o["lat"], o["lon"])), 1)
                 for m in members if m.get("lat") is not None and m["status"] == "answered"}
 
-    opts = [{k: v for k, v in o.items() if k != "host_id"} | {"host_pub": pub.get(o.get("host_id")), "distances": distances(o)}
+    def pin(o):
+        if o.get("lat") is None or o["kind"] == "online":
+            return {"lat": None, "lon": None}
+        return {"lat": round(o["lat"], 1), "lon": round(o["lon"], 1)} if o["kind"] == "home" else {}
+
+    opts = [{k: v for k, v in o.items() if k != "host_id"} | {"host_pub": pub.get(o.get("host_id")), "distances": distances(o)} | pin(o)
             for o in plan.get("options") or []]
     return {
         "id": plan["id"], "title": plan["title"], "kind": plan["kind"], "kind_other": plan.get("kind_other"),
@@ -199,7 +211,7 @@ def _view(plan: dict, me: dict | None) -> dict:
         "tasks": task_list, "host_address": address, "dropout": plan.get("dropout"),
         "checker": plan.get("checker_summary"), "created_at": plan["created_at"],
         "mode": plan.get("mode", "in_person"), "budget_mode": plan.get("budget_mode", "each"), "budget_limit": plan.get("budget_limit"),
-        "places": [{k: v for k, v in pl.items() if k != "host_id"} | {"host_pub": pub.get(pl.get("host_id")), "distances": distances(pl)}
+        "places": [{k: v for k, v in pl.items() if k != "host_id"} | {"host_pub": pub.get(pl.get("host_id")), "distances": distances(pl)} | pin(pl)
                    for pl in plan.get("places") or []],
         "place_votes": flow.place_tally(plan, members), "tallies": flow.tallies([dict(m) for m in members]),
         "lowest_budget": _lowest_budget(plan, members), "access_note": _access_note(plan, me, members),

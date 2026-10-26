@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { fmtRange, local, type Member, type Picks, type Plan } from '../api'
+import MiniMap from '../components/MiniMap'
 import LocationLine from '../components/Location'
 import { Avatar, AvatarRow, Button, Chip, ChipGroup, ErrorBox, Field, Help, inputCls, Note, PageHeading, SubHeading, Working } from '../components/ui'
 import { PASTELS } from '../config'
@@ -233,6 +234,7 @@ export function PlacePicker({ plan, me, isPlanner, busy, run, call }: FlowProps)
                 <dt className="text-ink-soft">Where</dt><dd>{where}</dd>
                 <dt className="text-ink-soft">Cost</dt><dd className="font-bold">{typeof p.cost_per_person === 'number' ? (p.cost_per_person ? `About $${p.cost_per_person} each` : 'Free') : 'Not sure'}</dd>
               </dl>
+              {p.kind !== 'online' && p.lat != null && p.lon != null && <MiniMap lat={p.lat} lon={p.lon} title={p.title} people={plan.members.filter((m) => m.status === 'answered')} />}
               {p.kind !== 'online' && <p className="text-sm">{p.access === 'unconfirmed' ? 'Access not confirmed, call ahead.' : "Checked for everyone's access needs."}</p>}
               {p.distances && Object.keys(p.distances).length > 0 && (
                 <div className="flex flex-wrap gap-3" aria-label="Distance for each person">

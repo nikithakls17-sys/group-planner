@@ -11,6 +11,8 @@ export type Member = {
   is_planner?: boolean
   has_answers?: boolean
   free_days?: string[]
+  /** city-level [lat, lon], rounded to about 10 km */
+  spot?: [number, number] | null
   id?: string
   email?: string
   availability?: { start: string; end: string }[]
@@ -54,6 +56,8 @@ export type Option = {
   weather?: string
   when_text?: string
   distances?: Record<string, number>
+  lat?: number | null
+  lon?: number | null
   checked?: boolean
   access?: 'ok' | 'unconfirmed'
   activity?: string

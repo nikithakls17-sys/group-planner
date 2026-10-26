@@ -84,6 +84,12 @@ def main():
                 pg.goto(B + path)
                 pg.wait_for_timeout(1500)
                 pg.screenshot(path=str(OUT / f"{name}-{device}.jpg"), type="jpeg", quality=82, full_page=device == "phone")
+            # close-ups of the map on a place card and on the confirmed plan
+            for name, path in (("16-map-place-card", f"/p/{a}?tab=places"), ("17-map-confirmed", f"/p/{b}?tab=places")):
+                pg.goto(B + path)
+                pg.wait_for_selector(".mini-map .leaflet-tile-loaded", timeout=20000)
+                pg.wait_for_timeout(1200)
+                pg.locator("article:has(.mini-map)").first.screenshot(path=str(OUT / f"{name}-{device}.jpg"), type="jpeg", quality=85)
             # a friend opening the link for the first time
             fr = br.new_context(viewport={"width": w, "height": h}, color_scheme="light")
             fr.add_init_script("localStorage.setItem('np.settings', JSON.stringify({motion:'reduce'}))")
