@@ -63,28 +63,28 @@ export default function Book({ tabs, active, onTab, menu = [], onMenu, headLeft,
     return () => window.clearTimeout(t)
   }, [leaf])
 
-  const pagePad = 'px-5 pb-12 pt-5 md:px-12 md:pt-8'
+  const pagePad = 'px-5 pb-12 pt-5 lg:px-12 lg:pt-8'
   const leafEl = leaf && (
     <>
-      <div key={`d${leaf.n}`} className={`leaf hidden md:block ${leaf.dir === 'fwd' ? 'leaf-forward' : 'leaf-back-dir'}`} aria-hidden="true">
+      <div key={`d${leaf.n}`} className={`leaf hidden lg:block ${leaf.dir === 'fwd' ? 'leaf-forward' : 'leaf-back-dir'}`} aria-hidden="true">
         <div className={`leaf-face paper overflow-hidden ${pagePad}`} inert><div className="mt-14 flex flex-col gap-6">{leaf.front}</div><div className="leaf-shade" /></div>
         <div className={`leaf-face leaf-back paper overflow-hidden ${pagePad}`} inert><div className="mt-14 flex flex-col gap-6">{leaf.back}</div><div className="leaf-shade" style={{ transform: 'scaleX(-1)' }} /></div>
       </div>
-      <div key={`m${leaf.n}`} className={`leaf md:hidden ${leaf.dir === 'fwd' ? 'leaf-phone' : 'leaf-phone-back'}`} aria-hidden="true">
+      <div key={`m${leaf.n}`} className={`leaf lg:hidden ${leaf.dir === 'fwd' ? 'leaf-phone' : 'leaf-phone-back'}`} aria-hidden="true">
         <div className={`leaf-face paper overflow-hidden ${pagePad}`} inert><div className="flex flex-col gap-6">{leaf.phoneFront}</div><div className="leaf-shade" /></div>
       </div>
     </>
   )
 
   return (
-    <div className="mx-auto w-full max-w-[1240px] md:px-14 md:py-8">
+    <div className="mx-auto w-full max-w-[1300px] lg:px-[132px] lg:py-8">
       {/* phone: main menu row, clip, then the plan's tab strip */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         {menu.length > 0 && (
-          <nav aria-label="Main menu" className="flex gap-1 overflow-x-auto px-3 pt-2">
+          <nav aria-label="Main menu" className="flex gap-1.5 overflow-x-auto px-3 pt-2">
             {menu.map((t) => (
               <button key={t.key} type="button" onClick={() => onMenu?.(t.key)} aria-current={t.key === active ? 'page' : undefined}
-                className={`on-pastel min-h-10 shrink-0 border-2 px-3 text-sm font-semibold ${t.key === active ? 'border-ink' : 'border-transparent'}`}
+                className={`on-pastel min-h-11 shrink-0 border-2 px-4 text-sm font-semibold ${t.key === active ? 'border-ink' : 'border-ink/25'}`}
                 style={{ background: t.color.hex }}>
                 {t.label}
               </button>
@@ -92,10 +92,10 @@ export default function Book({ tabs, active, onTab, menu = [], onMenu, headLeft,
           </nav>
         )}
         <div className="flex justify-center pt-2"><Clip className="h-10 w-20 rotate-90" /></div>
-        {tabs.length > 0 && <nav aria-label="Pages" className="-mb-px flex gap-1 overflow-x-auto px-3 pt-1">
+        {tabs.length > 0 && <nav aria-label="Pages" className="-mb-px flex gap-1.5 overflow-x-auto px-3 pt-1">
           {tabs.map((t) => (
             <button key={t.key} type="button" disabled={t.disabled} onClick={() => onTab(t.key)} aria-current={t.key === active ? 'page' : undefined}
-              className={`on-pastel min-h-12 shrink-0 border-2 border-b-0 px-4 text-sm font-bold disabled:opacity-50 ${t.key === active ? 'border-ink pb-1' : 'border-transparent opacity-90'}`}
+              className={`on-pastel min-h-12 shrink-0 border-2 border-b-0 px-5 pt-1 text-sm font-bold disabled:opacity-50 ${t.key === active ? 'border-ink pb-1' : 'border-ink/25'}`}
               style={{ background: t.color.hex }}>
               {t.label}
             </button>
@@ -104,44 +104,44 @@ export default function Book({ tabs, active, onTab, menu = [], onMenu, headLeft,
       </div>
 
       <div className="relative">
-        <Clip className="absolute -left-9 bottom-24 z-40 hidden h-28 w-16 md:block" />
+        <Clip className="absolute -left-9 bottom-24 z-40 hidden h-28 w-16 lg:block" />
         {menu.length > 0 && (
-          <nav aria-label="Main menu" className="absolute -left-[92px] top-10 z-0 hidden w-[100px] flex-col gap-1.5 md:flex">
+          <nav aria-label="Main menu" className="absolute -left-[116px] top-10 z-0 hidden w-[124px] flex-col gap-2 lg:flex">
             {menu.map((t) => (
               <button key={t.key} type="button" onClick={() => onMenu?.(t.key)} aria-current={t.key === active ? 'page' : undefined}
-                className={`on-pastel min-h-12 border-2 border-r-0 pl-2 pr-4 text-right text-sm font-bold transition-transform ${
-                  t.key === active ? 'translate-x-0 border-ink' : 'translate-x-[8px] border-transparent hover:translate-x-[4px]'}`}
+                className={`on-pastel min-h-12 border-2 border-r-0 py-2 pl-4 pr-7 text-right text-sm font-bold transition-transform ${
+                  t.key === active ? 'translate-x-0 border-ink' : 'translate-x-[8px] border-ink/25 hover:translate-x-[4px]'}`}
                 style={{ background: t.color.hex }}>
                 {t.label}
               </button>
             ))}
           </nav>
         )}
-        <nav aria-label="Pages" className="absolute -right-[92px] top-10 z-0 hidden w-[100px] flex-col gap-1.5 md:flex">
+        <nav aria-label="Pages" className="absolute -right-[116px] top-10 z-0 hidden w-[124px] flex-col gap-2 lg:flex">
           {tabs.map((t) => (
             <button key={t.key} type="button" disabled={t.disabled} onClick={() => onTab(t.key)} aria-current={t.key === active ? 'page' : undefined}
-              className={`on-pastel min-h-12 border-2 border-l-0 pl-4 pr-2 text-left text-sm font-bold transition-transform disabled:opacity-50 ${
-                t.key === active ? 'translate-x-0 border-ink' : 'translate-x-[-8px] border-transparent hover:translate-x-[-4px]'}`}
+              className={`on-pastel min-h-12 border-2 border-l-0 py-2 pl-7 pr-4 text-left text-sm font-bold transition-transform disabled:opacity-50 ${
+                t.key === active ? 'translate-x-0 border-ink' : 'translate-x-[-8px] border-ink/25 hover:translate-x-[-4px]'}`}
               style={{ background: t.color.hex }}>
               {t.label}
             </button>
           ))}
         </nav>
 
-        <div className="relative z-[1] grid min-h-[calc(100dvh-4rem)] grid-cols-1 shadow-[var(--page-shadow)] md:grid-cols-2">
+        <div className="relative z-[1] grid min-h-[calc(100dvh-4rem)] grid-cols-1 shadow-[var(--page-shadow)] lg:grid-cols-2">
           {leafEl}
           <section className={`paper relative flex min-w-0 flex-col ${pagePad}`} aria-label={tab?.label}>
-            <div className="mb-6 hidden items-center justify-between text-sm md:flex">
+            <div className="mb-6 hidden items-center justify-between text-sm lg:flex">
               <span className="font-semibold text-ink-soft">{headLeft}</span>
             </div>
             <div className="flex flex-col gap-6">{left}</div>
-            <span className="pointer-events-none absolute inset-y-0 right-0 hidden w-10 bg-gradient-to-l from-black/10 to-transparent md:block" />
+            <span className="pointer-events-none absolute inset-y-0 right-0 hidden w-10 bg-gradient-to-l from-black/10 to-transparent lg:block" />
           </section>
-          <aside className={`paper relative flex min-w-0 flex-col border-t-2 border-dashed border-rule md:border-t-0 ${pagePad}`} aria-label="Summary">
-            <div className="mb-6 hidden items-center justify-end text-sm md:flex">
+          <aside className={`paper relative flex min-w-0 flex-col border-t-2 border-dashed border-rule lg:border-t-0 ${pagePad}`} aria-label="Summary">
+            <div className="mb-6 hidden items-center justify-end text-sm lg:flex">
               <span className="font-semibold text-ink-soft">{headRight}</span>
             </div>
-            <span className="pointer-events-none absolute inset-y-0 left-0 hidden w-10 bg-gradient-to-r from-black/10 to-transparent md:block" />
+            <span className="pointer-events-none absolute inset-y-0 left-0 hidden w-10 bg-gradient-to-r from-black/10 to-transparent lg:block" />
             <div className="flex flex-col gap-6">{right}</div>
           </aside>
         </div>
