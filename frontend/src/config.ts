@@ -53,7 +53,7 @@ export const PLAN_TABS = [
 export type PlanTab = (typeof PLAN_TABS)[number]['key']
 
 export const APP_TABS = [
-  { key: '/', label: 'Home', color: PASTELS[0] },
+  { key: '/', label: 'Home', color: { hex: '#EDB10C', deep: '#6b4d00', name: 'marigold' } }, // darker than the sunshine desk
   { key: '/plans', label: 'Plans', color: PASTELS[4] },
   { key: '/groups', label: 'Groups', color: PASTELS[1] },
   { key: '/settings', label: 'Settings', color: PASTELS[3] },
