@@ -17,9 +17,13 @@ services:
         sync: false
       - key: MONGODB_URI
         sync: false
+      - key: MONGODB_DB
+        value: nobodyplans
       - key: SENTRY_DSN
         sync: false
       - key: SENTRY_ENVIRONMENT
         value: production
       - key: PUBLIC_URL
-        sync: false
+        value: https://plan.nikitha.tech
+      - key: PROMPT_VERSION
+        value: v1
