@@ -17,6 +17,24 @@
 
 ---
 
+**Live:** https://nobody-plans.onrender.com
+
+![The confirmed plan on a laptop: a two-page planner book with the stamped place, a small map and the Effort saved note](docs/screenshots/14-confirmed-laptop.jpg)
+
+## Screenshots
+
+All taken on the live site with real places from Google Maps (via SerpApi), ranked by Gemma 4 and checked by code.
+
+| Real places to pick from | The map: meeting pin, everyone's rough area | When are you free? |
+|---|---|---|
+| <img src="docs/screenshots/12-places-phone.jpg" width="260" alt="Places page on a phone: real cafes as sticker cards with cost, distance per person and a Pick button"> | <img src="docs/screenshots/16-map-place-card-phone.jpg" width="260" alt="A place card with a small map: a pin for the cafe and coloured initials dots at each person's city-level spot"> | <img src="docs/screenshots/08-dates-phone.jpg" width="260" alt="Dates page on a phone: Connect Google Calendar, or tap free dates on a month calendar"> |
+
+| Home | What are we planning? | Jobs split fairly |
+|---|---|---|
+| <img src="docs/screenshots/01-home-laptop.jpg" width="300" alt="Home on a laptop: the planner book with the main menu tabs on the left and your plans on the right"> | <img src="docs/screenshots/06-new-what-laptop.jpg" width="300" alt="First page of a new plan: in person or online, then what kind of plan"> | <img src="docs/screenshots/13-tasks-laptop.jpg" width="300" alt="Tasks page: jobs split across people, with drag to move and ask to swap"> |
+
+Every screen, on phone and laptop, is in [`docs/screenshots`](docs/screenshots).
+
 ## The problem
 
 Planning one dinner takes dozens of messages over days. Someone asks when everyone is free, chases replies,

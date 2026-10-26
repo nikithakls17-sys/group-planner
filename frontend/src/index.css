@@ -149,4 +149,4 @@ body { -webkit-tap-highlight-color: transparent; }
 :root[data-theme="dark"] .mini-map .leaflet-tile-pane { filter: invert(0.88) hue-rotate(180deg) saturate(0.4) sepia(0.2); }
 .mini-map .leaflet-control-attribution { font-size: 10px; background: color-mix(in srgb, var(--surface) 80%, transparent); }
 .map-dot { display: flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 2px solid var(--ink);
-  border-radius: 9999px; font: 700 10px/1 Inter, system-ui, sans-serif; color: #2b241c; }
+  font: 700 10px/1 Inter, system-ui, sans-serif; color: #2b241c; }

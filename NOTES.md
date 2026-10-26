@@ -336,3 +336,16 @@ task help (booking links, phone, website, Gemma tips). The Wear/Rides/Map/Money 
 - `eval/screenshots.py` now runs against the live site by default (`SHOT_BASE` for local) and stops with the failing
   call, status and body instead of a bare JSONDecodeError (the earlier crash was this same 500, plus the local server
   being stopped for low memory).
+
+## Oct 26: small map, Sentry check, README screenshots
+
+- **Map** (Leaflet 1.9.4 + OpenStreetMap tiles, no key) on place cards and the confirmed plan: an ink pin for the
+  meeting place, and an initials marker in each person's colour at a city-level spot. The API now sends `spot`, which is
+  lat/lon rounded to 0.1 degree (about 10 km), and rounds home-plan pins the same way, so no exact address ever
+  reaches the map. Online plans show no map. The map is static (no drag or scroll zoom), so it doesn't fight page
+  swipes on a phone. People sharing a spot sit side by side instead of overlapping. The markers are square, like the
+  avatars everywhere else.
+- **Sentry:** a test envelope sent to the DSN came back 200, and live `/api/health` now shows `"sentry": true`.
+  Health pings are no longer traced (`traces_sampler`), so Render's checks don't bury the Gemma traces.
+- Screenshots: 34 from the live site, including map close-ups (`16-map-place-card-*`, `17-map-confirmed-*`).
+  The best ones are in the README.
