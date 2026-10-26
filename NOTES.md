@@ -270,3 +270,48 @@ Running log of decisions, bugs and fixes. Becomes "How I Built It" in the post.
   6 passed, cafes and a park, the two with a confirmed wheelchair-accessible entrance first, the rest marked
   "unconfirmed". Gemma's reasons said things like "to satisfy the minority vote"; the prompt now says to talk about
   the place itself and never mention votes, ratings or budgets.
+
+## Checker eval: 20 tricky made-up groups (Oct 26)
+
+`eval/checker_eval.py`, model `gemma-4-31B-it` (DigitalOcean), seed 26, details in `eval/checker_eval_results.json`.
+Each group has 3-5 people in Bengaluru with mixed budgets and travel limits, plus 2 random tricks from: someone with
+a $0 budget, someone ~30 km away with a "short drive" limit, someone with no car, someone who needs step-free
+access, someone only free in the evening, someone in Chicago. Each group gets 12 made-up places (cheap to pricey,
+near and far, closed on Saturday / evenings only / all day, step-free yes / no / not listed). Gemma sees ALL the
+places (no code pre-filter, unlike the app) and the group's rules in plain words, and suggests 3 options.
+Every option is judged by the real checker AND by a separate answer key built from plain numbers (true minimum
+price, opening hours as numbers, access booleans, straight-line distance), so "caught" isn't the checker grading
+itself.
+
+| Rule | Raw Gemma options breaking it | Caught by the checker | Checker false alarms |
+|---|---|---|---|
+| invented_place | 0 of 60 (0%) | n/a | 0 |
+| time_window | 0 of 60 (0%) | n/a | 0 |
+| budget | 18 of 60 (30%) | 18 of 18 (100%) | 0 |
+| cost_too_low | 18 of 60 (30%) | 18 of 18 (100%) | 0 |
+| distance | 28 of 60 (47%) | 28 of 28 (100%) | 0 |
+| closed | 1 of 60 (2%) | 1 of 1 (100%) | 0 |
+| access | 0 of 60 (0%) | n/a | 0 |
+| **any rule** | **45 of 60 (75%)** | **45 of 45 (100%)** | |
+
+Honest reading:
+- 3 in 4 raw suggestions broke at least one rule, and the checker caught every one with no false alarms.
+- Distance is inflated by an impossible case: 23 of the 28 distance breaks were in groups with a friend ~30 km away
+  on a short-drive limit, where no in-person place could work for everyone (the app's answer there is to go
+  online). In the other groups Gemma broke distance 5 times in 36 options (14%).
+- Budget: 10 of the 18 budget breaks were in groups with a $0 person; Gemma still suggested paid places.
+- cost_too_low: Gemma said things like "$10" for a `$$$` place 18 times; the checker uses Google's price level as a
+  floor.
+- Gemma never invented a place or a time when the refs and windows were listed for it, and never picked a place
+  without step-free access when someone needed it (27 options in step-free groups), so those rules caught nothing
+  here. They still matter: the app shows them only what passed a code filter, and earlier runs did see invented refs
+  in the fake-Gemma tests.
+- Limits: 20 groups / 60 options is small; places are synthetic; the answer key and checker share the same rule
+  definitions (by design), so this measures whether the checker applies them correctly, including parsing Google's
+  hours and accessibility text.
+
+## Saved for later (not cancelled)
+
+Wear (dress code + outfit photos), Rides (how you're coming, ask for a ride, offer seats), Map (live location on the
+day), Money (receipts + bill splitting), Feelings and photos (people and pets) on the Who page, reminder emails,
+task help (booking links, phone, website, Gemma tips). The Wear/Rides/Map/Money tabs show "being built" for now.

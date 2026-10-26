@@ -1,0 +1,912 @@
+{
+ "raw_options": 60,
+ "rows": [
+  {
+   "group": 1,
+   "tricks": [
+    "far_member",
+    "us_member"
+   ],
+   "ref": "p_9",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 1,
+   "tricks": [
+    "far_member",
+    "us_member"
+   ],
+   "ref": "p_5",
+   "cost": 10,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 1,
+   "tricks": [
+    "far_member",
+    "us_member"
+   ],
+   "ref": "p_2",
+   "cost": 12,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 2,
+   "tricks": [
+    "us_member",
+    "far_member"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 2,
+   "tricks": [
+    "us_member",
+    "far_member"
+   ],
+   "ref": "p_7",
+   "cost": 12,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 2,
+   "tricks": [
+    "us_member",
+    "far_member"
+   ],
+   "ref": "p_8",
+   "cost": 10,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 3,
+   "tricks": [
+    "evening_only",
+    "zero_budget"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 3,
+   "tricks": [
+    "evening_only",
+    "zero_budget"
+   ],
+   "ref": "p_8",
+   "cost": 12,
+   "truth": [
+    "budget"
+   ],
+   "checker": [
+    "budget"
+   ]
+  },
+  {
+   "group": 3,
+   "tricks": [
+    "evening_only",
+    "zero_budget"
+   ],
+   "ref": "p_2",
+   "cost": 25,
+   "truth": [
+    "budget"
+   ],
+   "checker": [
+    "budget"
+   ]
+  },
+  {
+   "group": 4,
+   "tricks": [
+    "zero_budget",
+    "far_member"
+   ],
+   "ref": "p_0",
+   "cost": 10,
+   "truth": [
+    "budget",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "distance"
+   ]
+  },
+  {
+   "group": 4,
+   "tricks": [
+    "zero_budget",
+    "far_member"
+   ],
+   "ref": "p_6",
+   "cost": 12,
+   "truth": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ]
+  },
+  {
+   "group": 4,
+   "tricks": [
+    "zero_budget",
+    "far_member"
+   ],
+   "ref": "p_7",
+   "cost": 14,
+   "truth": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ]
+  },
+  {
+   "group": 5,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_9",
+   "cost": 0,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 5,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_6",
+   "cost": 12,
+   "truth": [
+    "cost_too_low"
+   ],
+   "checker": [
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 5,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_8",
+   "cost": 10,
+   "truth": [
+    "closed"
+   ],
+   "checker": [
+    "closed"
+   ]
+  },
+  {
+   "group": 6,
+   "tricks": [
+    "far_member",
+    "no_car"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 6,
+   "tricks": [
+    "far_member",
+    "no_car"
+   ],
+   "ref": "p_10",
+   "cost": 10,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 6,
+   "tricks": [
+    "far_member",
+    "no_car"
+   ],
+   "ref": "p_5",
+   "cost": 8,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 7,
+   "tricks": [
+    "far_member",
+    "evening_only"
+   ],
+   "ref": "p_9",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 7,
+   "tricks": [
+    "far_member",
+    "evening_only"
+   ],
+   "ref": "p_0",
+   "cost": 10,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 7,
+   "tricks": [
+    "far_member",
+    "evening_only"
+   ],
+   "ref": "p_5",
+   "cost": 12,
+   "truth": [
+    "cost_too_low",
+    "distance"
+   ],
+   "checker": [
+    "cost_too_low",
+    "distance"
+   ]
+  },
+  {
+   "group": 8,
+   "tricks": [
+    "evening_only",
+    "step_free"
+   ],
+   "ref": "p_10",
+   "cost": 10,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 8,
+   "tricks": [
+    "evening_only",
+    "step_free"
+   ],
+   "ref": "p_1",
+   "cost": 30,
+   "truth": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ]
+  },
+  {
+   "group": 8,
+   "tricks": [
+    "evening_only",
+    "step_free"
+   ],
+   "ref": "p_2",
+   "cost": 12,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 9,
+   "tricks": [
+    "no_car",
+    "zero_budget"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 9,
+   "tricks": [
+    "no_car",
+    "zero_budget"
+   ],
+   "ref": "p_8",
+   "cost": 12,
+   "truth": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ]
+  },
+  {
+   "group": 9,
+   "tricks": [
+    "no_car",
+    "zero_budget"
+   ],
+   "ref": "p_1",
+   "cost": 14,
+   "truth": [
+    "budget",
+    "cost_too_low"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 10,
+   "tricks": [
+    "step_free",
+    "us_member"
+   ],
+   "ref": "p_0",
+   "cost": 30,
+   "truth": [
+    "budget",
+    "cost_too_low"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 10,
+   "tricks": [
+    "step_free",
+    "us_member"
+   ],
+   "ref": "p_6",
+   "cost": 30,
+   "truth": [
+    "budget",
+    "cost_too_low"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 10,
+   "tricks": [
+    "step_free",
+    "us_member"
+   ],
+   "ref": "p_8",
+   "cost": 30,
+   "truth": [
+    "budget",
+    "cost_too_low"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 11,
+   "tricks": [
+    "step_free",
+    "zero_budget"
+   ],
+   "ref": "p_6",
+   "cost": 0,
+   "truth": [
+    "cost_too_low"
+   ],
+   "checker": [
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 11,
+   "tricks": [
+    "step_free",
+    "zero_budget"
+   ],
+   "ref": "p_1",
+   "cost": 0,
+   "truth": [
+    "cost_too_low"
+   ],
+   "checker": [
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 11,
+   "tricks": [
+    "step_free",
+    "zero_budget"
+   ],
+   "ref": "p_8",
+   "cost": 0,
+   "truth": [
+    "cost_too_low"
+   ],
+   "checker": [
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 12,
+   "tricks": [
+    "evening_only",
+    "step_free"
+   ],
+   "ref": "p_1",
+   "cost": 12,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 12,
+   "tricks": [
+    "evening_only",
+    "step_free"
+   ],
+   "ref": "p_9",
+   "cost": 0,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 12,
+   "tricks": [
+    "evening_only",
+    "step_free"
+   ],
+   "ref": "p_10",
+   "cost": 10,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 13,
+   "tricks": [
+    "far_member",
+    "evening_only"
+   ],
+   "ref": "p_1",
+   "cost": 10,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 13,
+   "tricks": [
+    "far_member",
+    "evening_only"
+   ],
+   "ref": "p_1",
+   "cost": 10,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 13,
+   "tricks": [
+    "far_member",
+    "evening_only"
+   ],
+   "ref": "p_7",
+   "cost": 25,
+   "truth": [
+    "budget",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "distance"
+   ]
+  },
+  {
+   "group": 14,
+   "tricks": [
+    "evening_only",
+    "zero_budget"
+   ],
+   "ref": "p_9",
+   "cost": 0,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 14,
+   "tricks": [
+    "evening_only",
+    "zero_budget"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 14,
+   "tricks": [
+    "evening_only",
+    "zero_budget"
+   ],
+   "ref": "p_0",
+   "cost": 12,
+   "truth": [
+    "budget",
+    "cost_too_low"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 15,
+   "tricks": [
+    "zero_budget",
+    "no_car"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 15,
+   "tricks": [
+    "zero_budget",
+    "no_car"
+   ],
+   "ref": "p_8",
+   "cost": 10,
+   "truth": [
+    "budget"
+   ],
+   "checker": [
+    "budget"
+   ]
+  },
+  {
+   "group": 15,
+   "tricks": [
+    "zero_budget",
+    "no_car"
+   ],
+   "ref": "p_11",
+   "cost": 35,
+   "truth": [
+    "budget"
+   ],
+   "checker": [
+    "budget"
+   ]
+  },
+  {
+   "group": 16,
+   "tricks": [
+    "far_member",
+    "no_car"
+   ],
+   "ref": "p_7",
+   "cost": 25,
+   "truth": [
+    "budget",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "distance"
+   ]
+  },
+  {
+   "group": 16,
+   "tricks": [
+    "far_member",
+    "no_car"
+   ],
+   "ref": "p_8",
+   "cost": 20,
+   "truth": [
+    "budget",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "distance"
+   ]
+  },
+  {
+   "group": 16,
+   "tricks": [
+    "far_member",
+    "no_car"
+   ],
+   "ref": "p_9",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 17,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_8",
+   "cost": 35,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 17,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_6",
+   "cost": 12,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 17,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_10",
+   "cost": 25,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 18,
+   "tricks": [
+    "step_free",
+    "far_member"
+   ],
+   "ref": "p_1",
+   "cost": 30,
+   "truth": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ],
+   "checker": [
+    "budget",
+    "cost_too_low",
+    "distance"
+   ]
+  },
+  {
+   "group": 18,
+   "tricks": [
+    "step_free",
+    "far_member"
+   ],
+   "ref": "p_2",
+   "cost": 10,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 18,
+   "tricks": [
+    "step_free",
+    "far_member"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 19,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_3",
+   "cost": 0,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 19,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_1",
+   "cost": 25,
+   "truth": [
+    "distance"
+   ],
+   "checker": [
+    "distance"
+   ]
+  },
+  {
+   "group": 19,
+   "tricks": [
+    "no_car",
+    "step_free"
+   ],
+   "ref": "p_2",
+   "cost": 35,
+   "truth": [],
+   "checker": []
+  },
+  {
+   "group": 20,
+   "tricks": [
+    "us_member",
+    "step_free"
+   ],
+   "ref": "p_0",
+   "cost": 12,
+   "truth": [
+    "cost_too_low"
+   ],
+   "checker": [
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 20,
+   "tricks": [
+    "us_member",
+    "step_free"
+   ],
+   "ref": "p_5",
+   "cost": 14,
+   "truth": [
+    "cost_too_low"
+   ],
+   "checker": [
+    "cost_too_low"
+   ]
+  },
+  {
+   "group": 20,
+   "tricks": [
+    "us_member",
+    "step_free"
+   ],
+   "ref": "p_10",
+   "cost": 10,
+   "truth": [
+    "cost_too_low"
+   ],
+   "checker": [
+    "cost_too_low"
+   ]
+  }
+ ],
+ "broke": {
+  "invented_place": 0,
+  "time_window": 0,
+  "budget": 18,
+  "cost_too_low": 18,
+  "distance": 28,
+  "closed": 1,
+  "access": 0
+ },
+ "caught": {
+  "invented_place": 0,
+  "time_window": 0,
+  "budget": 18,
+  "cost_too_low": 18,
+  "distance": 28,
+  "closed": 1,
+  "access": 0
+ },
+ "false_alarm": {
+  "invented_place": 0,
+  "time_window": 0,
+  "budget": 0,
+  "cost_too_low": 0,
+  "distance": 0,
+  "closed": 0,
+  "access": 0
+ }
+}
